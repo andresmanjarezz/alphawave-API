@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -74,10 +74,11 @@ type (
 )
 
 func Init(configDir string) (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
+	// err := godotenv.Load()
+
+	// if err != nil {
+	// 	return nil, err
+	// }
 	var cfg Config
 	if err := parseConfigFile(configDir); err != nil {
 		return nil, err
