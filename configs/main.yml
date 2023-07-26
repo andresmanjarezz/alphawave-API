@@ -18,4 +18,4 @@ email:
   templates:
     verification: "./templates/verification_email.html"
   subjects:
-    verification: "Спасибо за регистрацию, %s!"
+    verification: "Thanks, for registration %s!"

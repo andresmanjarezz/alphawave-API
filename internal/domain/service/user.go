@@ -13,7 +13,6 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
-
 )
 
 type UserService struct {
@@ -44,7 +43,7 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) (ty
 	if err := validateCredentials(input.Email, input.Password); err != nil {
 		return types.VerificationCodeDTO{}, err
 	}
-	if err := validateUserData(input.FirstName, input.LastName, input.CompanyName); err != nil {
+	if err := validateUserData(input.FirstName, input.LastName, input.JobTitle); err != nil {
 		return types.VerificationCodeDTO{}, err
 	}
 	passwordHash, err := s.hasher.Hash(input.Password)
@@ -54,11 +53,11 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) (ty
 	verificationCode := s.codeGenerator.GenerateUniqueCode()
 
 	user := model.User{
-		FirstName:   input.FirstName,
-		LastName:    input.LastName,
-		CompanyName: input.CompanyName,
-		Email:       input.Email,
-		Password:    passwordHash,
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		JobTitle:  input.JobTitle,
+		Email:     input.Email,
+		Password:  passwordHash,
 		Verification: model.UserVerificationPayload{
 			VerificationCode:            verificationCode,
 			VerificationCodeExpiresTime: time.Now().Add(s.VerificationCodeTTL),

@@ -9,7 +9,6 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/gin-gonic/gin"
-
 )
 
 func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
@@ -28,11 +27,11 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 }
 
 type UserSignUpInput struct {
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
-	CompanyName string `json:"companyName"`
-	Email       string `json:"email"`
-	Password    string `json:"password"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	JobTitle  string `json:"jobTitle"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 type UserSignInInput struct {
@@ -67,11 +66,11 @@ func (h *HandlerV1) SignUp(c *gin.Context) {
 		return
 	}
 	res, err := h.service.UserService.SignUp(c.Request.Context(), types.UserSignUpDTO{
-		FirstName:   input.FirstName,
-		LastName:    input.LastName,
-		CompanyName: input.CompanyName,
-		Email:       input.Email,
-		Password:    input.Password,
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		JobTitle:  input.JobTitle,
+		Email:     input.Email,
+		Password:  input.Password,
 	})
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserAlreadyExists) {

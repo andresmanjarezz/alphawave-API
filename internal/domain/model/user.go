@@ -6,7 +6,7 @@ type User struct {
 	ID             string                  `json:"id" bson:"_id,omitempty"`
 	FirstName      string                  `json:"firstName" bson:"firstName"`
 	LastName       string                  `json:"lastName" bson:"lastName"`
-	CompanyName    string                  `json:"companyName" bson:"companyName"`
+	JobTitle       string                  `json:"jobTitle" bson:"jobTitle"`
 	Email          string                  `json:"email" bson:"email"`
 	Password       string                  `json:"password" bson:"password"`
 	Verification   UserVerificationPayload `json:"verification" bson:"verification"`
