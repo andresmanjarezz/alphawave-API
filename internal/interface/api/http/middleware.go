@@ -7,6 +7,20 @@ import (
 )
 
 func corsMiddleware(c *gin.Context) {
+	allowedOrigins := []string{
+		"https://alphawave.gasstrem.com",
+		"http://localhost:3000",
+		"http://localhost:3001",
+	}
+
+	requestOrigin := c.Request.Header.Get("Origin")
+	for _, origin := range allowedOrigins {
+		if origin == requestOrigin {
+			c.Header("Access-Control-Allow-Origin", origin)
+			break
+		}
+	}
+
 	c.Header("Access-Control-Allow-Origin", "https://alphawave.gasstrem.com")
 	c.Header("Access-Control-Allow-Methods", "*")
 	c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
