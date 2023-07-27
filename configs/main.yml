@@ -7,7 +7,7 @@ http:
 auth:
   accessTokenTTL: 2h
   refreshTokenTTL: 720h
-  verificationCodeTTL: 5m
+  verificationCodeTTL: 30s
 
 smtp:
   host: "smtp.gmail.com"

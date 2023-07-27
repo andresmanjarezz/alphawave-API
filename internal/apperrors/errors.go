@@ -6,7 +6,7 @@ var (
 	ErrIncorrectVerificationCode = errors.New("incorrect verificaion code")
 	ErrUserAlreadyExists         = errors.New("user with such email lready exists")
 	ErrIncorrectUserData         = errors.New("first name, last name, company name ust be more than 2 characters long")
-	ErrUserAlreadyVerifyed       = errors.New("user with such emailaready verifyed")
+	ErrUserAlreadyVerifyed       = errors.New("user with such email aready verifyed")
 	ErrUserNotFound              = errors.New("user doesn't exists")
 	ErrVerificationCodeExpired   = errors.New("The code has expired")
 	ErrInternalServerError       = errors.New("Thre was an internal serr bug, please try again later")

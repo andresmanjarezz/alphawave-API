@@ -17,11 +17,12 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 		users.POST("/sign-up", h.SignUp)
 		users.POST("/sign-in", h.SignIn)
 		users.POST("/verify", h.userVerify)
+		users.POST("/resend-verification", h.ResendVerificationCode)
 		users.GET("/auth/refresh", h.userRefresh)
-		// authenticated := users.Group("/", h.userIdentity)
-		// {
-
-		// }
+		authenticated := users.Group("/", h.userIdentity)
+		{
+			authenticated.GET("/me", h.GetUser)
+		}
 	}
 
 }
@@ -56,6 +57,10 @@ type tokenResponse struct {
 type verifyResponse struct {
 	Email                       string        `json:"email"`
 	VerificationCodeExpiresTime time.Duration `json:"verificationCodeExpiresTime"`
+}
+
+type EmailInput struct {
+	Email string `json:"email"`
 }
 
 func (h *HandlerV1) SignUp(c *gin.Context) {
@@ -99,6 +104,39 @@ func (h *HandlerV1) SignUp(c *gin.Context) {
 	})
 }
 
+func (h *HandlerV1) GetUser(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.String(200, userID)
+}
+
+func (h *HandlerV1) ResendVerificationCode(c *gin.Context) {
+	var input EmailInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	res, err := h.service.UserService.ResendVerificationCode(c.Request.Context(), input.Email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusCreated, verifyResponse{
+		Email:                       res.Email,
+		VerificationCodeExpiresTime: res.VerificationCodeExpiresTime,
+	})
+}
+
 func (h *HandlerV1) SignIn(c *gin.Context) {
 	var input UserSignInInput
 
@@ -116,6 +154,7 @@ func (h *HandlerV1) SignIn(c *gin.Context) {
 			newResponse(c, http.StatusBadRequest, err.Error())
 			return
 		}
+
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -180,5 +219,5 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, "succes")
+	c.String(http.StatusOK, "success")
 }

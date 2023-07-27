@@ -11,11 +11,13 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/email"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
+
 )
 
 type UserServiceI interface {
 	SignUp(ctx context.Context, input types.UserSignUpDTO) (types.VerificationCodeDTO, error)
 	SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error)
+	ResendVerificationCode(ctx context.Context, email string) (types.VerificationCodeDTO, error)
 	RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error)
 	Verify(ctx context.Context, email string, verificationCode string) error
 }

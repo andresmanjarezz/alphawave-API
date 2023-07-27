@@ -94,10 +94,10 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) (ty
 }
 
 func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error) {
-	err := validateCredentials(input.Email, input.Password)
-	if err != nil {
-		return types.Tokens{}, err
-	}
+	// err := validateCredentials(input.Email, input.Password)
+	// if err != nil {
+	// 	return types.Tokens{}, err
+	// }
 	passwordHash, err := s.hasher.Hash(input.Password)
 	if err != nil {
 		return types.Tokens{}, err
@@ -137,6 +137,43 @@ func (s *UserService) Verify(ctx context.Context, email string, verificationCode
 	}
 
 	return s.repository.Verify(ctx, user.ID, verificationCode)
+}
+
+func (s *UserService) ResendVerificationCode(ctx context.Context, email string) (types.VerificationCodeDTO, error) {
+	verificationCode := s.codeGenerator.GenerateUniqueCode()
+
+	user, err := s.repository.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return types.VerificationCodeDTO{}, err
+		}
+		return types.VerificationCodeDTO{}, err
+	}
+	verificationPayload := model.UserVerificationPayload{
+		VerificationCode:            verificationCode,
+		VerificationCodeExpiresTime: time.Now().Add(s.VerificationCodeTTL),
+	}
+	err = s.repository.ChangeVerificationCode(ctx, email, verificationPayload)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return types.VerificationCodeDTO{}, err
+		}
+		return types.VerificationCodeDTO{}, err
+	}
+
+	go func() {
+		err = s.emailService.SendUserVerificationEmail(VerificationEmailInput{
+			Name:             user.FirstName,
+			Email:            user.Email,
+			VerificationCode: verificationCode,
+		})
+		logger.Error(err)
+	}()
+	return types.VerificationCodeDTO{
+		Email:                       user.Email,
+		VerificationCodeExpiresTime: s.VerificationCodeTTL / time.Second,
+	}, nil
 }
 
 func (s *UserService) RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error) {

@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-
 )
 
 type UserRepository struct {
@@ -80,6 +79,19 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (mode
 	}
 
 	return user, err
+}
+
+func (r *UserRepository) ChangeVerificationCode(ctx context.Context, email string, input model.UserVerificationPayload) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	_, err := r.db.UpdateOne(nCtx, bson.M{"email": email}, bson.M{"$set": bson.M{"verification.verificationCode": input.VerificationCode, "verification.verificationCodeExpiresTime": input.VerificationCodeExpiresTime}})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return apperrors.ErrUserNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *UserRepository) SetSession(ctx context.Context, userID string, session model.Session, lastVisitTime time.Time) error {

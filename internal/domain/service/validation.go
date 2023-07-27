@@ -4,7 +4,6 @@ import (
 	"regexp"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
-
 )
 
 func validateCredentials(email, password string) error {
@@ -26,8 +25,8 @@ func validateCredentials(email, password string) error {
 	return nil
 }
 
-func validateUserData(firstName string, lastName string, companyName string) error {
-	if len(firstName) < 2 || len(lastName) < 2 || len(companyName) < 2 {
+func validateUserData(firstName string, lastName string, jobTitle string) error {
+	if len(firstName) < 2 || len(lastName) < 2 || len(jobTitle) < 2 {
 		return apperrors.ErrIncorrectUserData
 	}
 	return nil
