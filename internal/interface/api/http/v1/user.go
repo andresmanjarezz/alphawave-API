@@ -9,6 +9,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/gin-gonic/gin"
+
 )
 
 func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
@@ -203,7 +204,7 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrIncorrectVerificationCode) {
-			newResponse(c, http.StatusConflict, err.Error())
+			newResponse(c, http.StatusBadRequest, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrUserAlreadyVerifyed) {
