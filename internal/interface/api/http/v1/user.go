@@ -79,19 +79,19 @@ func (h *HandlerV1) SignUp(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserAlreadyExists) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusConflict, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectEmailFormat) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectPasswordFormat) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectUserData) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, err.Error())
@@ -124,7 +124,7 @@ func (h *HandlerV1) ResendVerificationCode(c *gin.Context) {
 	res, err := h.service.UserService.ResendVerificationCode(c.Request.Context(), input.Email)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusUnauthorized, err.Error())
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, err.Error())
@@ -151,7 +151,7 @@ func (h *HandlerV1) SignIn(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusNotFound, err.Error())
 			return
 		}
 
@@ -179,7 +179,7 @@ func (h *HandlerV1) userRefresh(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusNotFound, err.Error())
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
@@ -203,15 +203,15 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrIncorrectVerificationCode) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusConflict, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrUserAlreadyVerifyed) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusConflict, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrVerificationCodeExpired) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			newResponse(c, http.StatusGone, err.Error())
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
