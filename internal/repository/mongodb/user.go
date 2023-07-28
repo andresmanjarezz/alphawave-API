@@ -81,6 +81,35 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (mode
 	return user, err
 }
 
+func (r *UserRepository) GetUserById(ctx context.Context, userID string) (model.User, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var user model.User
+	ObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return model.User{}, err
+	}
+	filter := bson.M{"_id": ObjectID}
+
+	res := r.db.FindOne(nCtx, filter)
+
+	err = res.Err()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return user, apperrors.ErrUserNotFound
+		}
+
+		return user, err
+
+	}
+	if err := res.Decode(&user); err != nil {
+		return user, err
+	}
+
+	return user, err
+}
+
 func (r *UserRepository) ChangeVerificationCode(ctx context.Context, email string, input model.UserVerificationPayload) error {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

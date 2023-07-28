@@ -13,6 +13,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
+
 )
 
 type UserService struct {
@@ -116,6 +117,30 @@ func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (ty
 
 func (s *UserService) LogOut(ctx context.Context, userID string) {
 
+}
+
+func (s *UserService) GetUserById(ctx context.Context, userID string) (types.UserDTO, error) {
+	res, err := s.repository.GetUserById(ctx, userID)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return types.UserDTO{}, err
+		}
+		return types.UserDTO{}, err
+	}
+
+	user := types.UserDTO{
+		FirstName: res.FirstName,
+		LastName: res.LastName,
+		JobTitle: res.JobTitle,
+		Email: res.Email,
+		LastVisitTime: res.LastVisitTime,
+		RegisteredTime: res.RegisteredTime,
+		Verification: res.Verification.Verified,
+		Blocked: res.Blocked,
+	}
+	
+	return user, nil
 }
 
 func (s *UserService) Verify(ctx context.Context, email string, verificationCode string) error {

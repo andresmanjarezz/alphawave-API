@@ -9,7 +9,6 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/gin-gonic/gin"
-
 )
 
 func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
@@ -111,7 +110,17 @@ func (h *HandlerV1) GetUser(c *gin.Context) {
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
-	c.String(200, userID)
+	user, err := h.service.UserService.GetUserById(c.Request.Context(), userID)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }
 
 func (h *HandlerV1) ResendVerificationCode(c *gin.Context) {
