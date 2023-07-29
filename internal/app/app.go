@@ -68,7 +68,7 @@ func Run() {
 		VerificationCodeLength: cfg.Auth.VerificationCodeLength,
 		ApiUrl:                 cfg.HTTP.Host,
 	})
-	handler := httpRoutes.NewHandler(service, JWTManager, cfg.Auth.JWT.RefreshTokenTTL)
+	handler := httpRoutes.NewHandler(service, JWTManager, cfg.Auth.JWT.RefreshTokenTTL, cfg.FrontEndUrl)
 
 	srv := NewServer(cfg, handler.InitRoutes())
 	go func() {

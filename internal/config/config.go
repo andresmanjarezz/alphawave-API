@@ -19,11 +19,12 @@ const (
 )
 
 type Config struct {
-	HTTP    HTTPConfig
-	SMTP    SMTPConfig
-	MongoDB MongoConfig
-	Auth    AuthConfig
-	Email   EmailConfig
+	FrontEndUrl string
+	HTTP        HTTPConfig
+	SMTP        SMTPConfig
+	MongoDB     MongoConfig
+	Auth        AuthConfig
+	Email       EmailConfig
 }
 
 type (
@@ -138,7 +139,7 @@ func setFromEnv(cfg *Config) {
 	cfg.MongoDB.Username = os.Getenv("MONGODB_USERNAME")
 	cfg.MongoDB.Password = os.Getenv("MONGODB_PASSWORD")
 	cfg.MongoDB.DBName = os.Getenv("MONGODB_NAME")
-
+	cfg.FrontEndUrl = os.Getenv("FRONT_END_URL")
 	cfg.Auth.PasswordSalt = os.Getenv("PASSWORD_SALT")
 	cfg.Auth.JWT.SigningKey = os.Getenv("JWT_SIGNING_KEY")
 

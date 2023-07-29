@@ -9,6 +9,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/gin-gonic/gin"
+
 )
 
 func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
@@ -227,7 +228,7 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 		return
 	}
-	c.Redirect(http.StatusMovedPermanently, "http://localhost:3000/verification-done")
+	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/verification-done", h.frontEndUrl))
 	// c.String(http.StatusOK, "success")
 
 }

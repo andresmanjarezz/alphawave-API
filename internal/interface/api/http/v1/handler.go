@@ -6,19 +6,22 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/service"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/auth/manager"
 	"github.com/gin-gonic/gin"
+
 )
 
 type HandlerV1 struct {
 	service         *service.Service
 	JWTManager      *manager.JWTManager
 	refreshTokenTTL time.Duration
+	frontEndUrl string
 }
 
-func NewHandler(service *service.Service, JWTManager *manager.JWTManager, refreshTokenTTL time.Duration) *HandlerV1 {
+func NewHandler(service *service.Service, JWTManager *manager.JWTManager, refreshTokenTTL time.Duration, frontEndUrl string) *HandlerV1 {
 	return &HandlerV1{
 		service:         service,
 		JWTManager:      JWTManager,
 		refreshTokenTTL: refreshTokenTTL,
+		frontEndUrl: frontEndUrl,
 	}
 }
 
