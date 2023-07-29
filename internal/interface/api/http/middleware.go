@@ -13,6 +13,7 @@ func corsMiddleware(c *gin.Context) {
 		"http://localhost:3001",
 		"http://localhost",
 		"https://alpahwave-client.onrender.com",
+		"oyster-app-4mavy.ondigitalocean.app",
 	}
 
 	requestOrigin := c.Request.Header.Get("Origin")
