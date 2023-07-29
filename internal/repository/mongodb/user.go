@@ -135,17 +135,36 @@ func (r *UserRepository) SetSession(ctx context.Context, userID string, session 
 	return err
 }
 
-func (r *UserRepository) Verify(ctx context.Context, userID string, verificationCode string) error {
+func (r *UserRepository) Verify(ctx context.Context, verificationCode string) error {
 	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	ObjectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return err
-	}
-	_, err = r.db.UpdateOne(nCtx, bson.M{"_id": ObjectID, "verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true}})
+
+	_, err := r.db.UpdateOne(nCtx, bson.M{"verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true, "verification.verificationCode": ""}})
 
 	return err
 }
+
+func (r *UserRepository) GetUserByVerificationCode(ctx context.Context, hash string) (model.User, error) {
+	var user model.User
+	filter := bson.M{"verification.verificationCode": hash}
+
+	res := r.db.FindOne(ctx, filter)
+
+	err := res.Err()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return user, apperrors.ErrUserNotFound
+		}
+
+		return user, err
+
+	}
+	if err := res.Decode(&user); err != nil {
+		return user, err
+	}
+	return user, nil
+}
+
 func (r *UserRepository) GetByRefreshToken(ctx context.Context, refreshToken string) (model.User, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

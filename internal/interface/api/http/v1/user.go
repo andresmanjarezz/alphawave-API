@@ -16,7 +16,7 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 	{
 		users.POST("/sign-up", h.SignUp)
 		users.POST("/sign-in", h.SignIn)
-		users.POST("/verify", h.userVerify)
+		users.GET("/verify/:code", h.userVerify)
 		users.POST("/resend-verification", h.ResendVerificationCode)
 		users.GET("/auth/refresh", h.userRefresh)
 		authenticated := users.Group("/", h.userIdentity)
@@ -70,7 +70,7 @@ func (h *HandlerV1) SignUp(c *gin.Context) {
 		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
 		return
 	}
-	res, err := h.service.UserService.SignUp(c.Request.Context(), types.UserSignUpDTO{
+	err := h.service.UserService.SignUp(c.Request.Context(), types.UserSignUpDTO{
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
 		JobTitle:  input.JobTitle,
@@ -83,25 +83,22 @@ func (h *HandlerV1) SignUp(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectEmailFormat) {
-			newResponse(c, http.StatusUnprocessableEntity, err.Error())
+			newResponse(c, http.StatusBadRequest, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectPasswordFormat) {
-			newResponse(c, http.StatusUnprocessableEntity, err.Error())
+			newResponse(c, http.StatusBadRequest, err.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectUserData) {
-			newResponse(c, http.StatusUnprocessableEntity, err.Error())
+			newResponse(c, http.StatusBadRequest, err.Error())
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, verifyResponse{
-		Email:                       res.Email,
-		VerificationCodeExpiresTime: res.VerificationCodeExpiresTime,
-	})
+	c.Status(http.StatusCreated)
 }
 
 func (h *HandlerV1) GetUser(c *gin.Context) {
@@ -131,20 +128,17 @@ func (h *HandlerV1) ResendVerificationCode(c *gin.Context) {
 		return
 	}
 
-	res, err := h.service.UserService.ResendVerificationCode(c.Request.Context(), input.Email)
+	err := h.service.UserService.ResendVerificationCode(c.Request.Context(), input.Email)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusUnauthorized, err.Error())
+			newResponse(c, http.StatusNotFound, err.Error())
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, verifyResponse{
-		Email:                       res.Email,
-		VerificationCodeExpiresTime: res.VerificationCodeExpiresTime,
-	})
+	c.Status(http.StatusOK)
 }
 
 func (h *HandlerV1) SignIn(c *gin.Context) {
@@ -162,6 +156,10 @@ func (h *HandlerV1) SignIn(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
 			newResponse(c, http.StatusNotFound, err.Error())
+			return
+		}
+		if errors.Is(err, apperrors.ErrUserNotVerifyed) {
+			newResponse(c, http.StatusUnauthorized, err.Error())
 			return
 		}
 
@@ -204,12 +202,13 @@ func (h *HandlerV1) userRefresh(c *gin.Context) {
 }
 
 func (h *HandlerV1) userVerify(c *gin.Context) {
-	var input UserVerifyInput
-	if err := c.BindJSON(&input); err != nil {
-		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+	code := c.Param("code")
+	if code == "" {
+		newResponse(c, http.StatusBadRequest, "code is empty")
+
 		return
 	}
-	err := h.service.UserService.Verify(c.Request.Context(), input.Email, input.VerificationCode)
+	err := h.service.UserService.Verify(c.Request.Context(), code)
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrIncorrectVerificationCode) {
@@ -228,6 +227,7 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 		return
 	}
+	c.Redirect(http.StatusMovedPermanently, "http://localhost:3000/verification-done")
+	// c.String(http.StatusOK, "success")
 
-	c.String(http.StatusOK, "success")
 }

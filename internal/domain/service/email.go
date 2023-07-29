@@ -5,7 +5,6 @@ import (
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/config"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/email"
-
 )
 
 type EmailService struct {
@@ -21,16 +20,16 @@ func NewEmailService(sender email.Sender, config config.EmailConfig) *EmailServi
 }
 
 type VerificationEmailInput struct {
-	Name             string
-	VerificationCode string
-	Email            string
+	Name  string
+	Email string
+	URL   string
 }
 
 func (e *EmailService) SendUserVerificationEmail(input VerificationEmailInput) error {
 	subject := fmt.Sprintf(e.config.Subjects.Verification, input.Name)
 	sendInput := email.SendEmailInput{To: input.Email, Subject: subject}
 
-	templateInput := VerificationEmailInput{Name: input.Name, VerificationCode: input.VerificationCode}
+	templateInput := VerificationEmailInput{Name: input.Name, URL: input.URL}
 
 	err := sendInput.GenerateBodyFromHTML(e.config.Templates.Verification, templateInput)
 	if err != nil {

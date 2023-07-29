@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -13,45 +14,52 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
-
 )
 
 type UserService struct {
-	hasher              *hash.Hasher
-	repository          repository.UserRepository
-	JWTManager          *manager.JWTManager
-	AccessTokenTTL      time.Duration
-	RefreshTokenTTL     time.Duration
-	VerificationCodeTTL time.Duration
-	codeGenerator       *codegenerator.CodeGenerator
-	emailService        *EmailService
+	hasher                 *hash.Hasher
+	repository             repository.UserRepository
+	JWTManager             *manager.JWTManager
+	AccessTokenTTL         time.Duration
+	RefreshTokenTTL        time.Duration
+	VerificationCodeTTL    time.Duration
+	VerificationCodeLength int
+	ApiUrl                 string
+	codeGenerator          *codegenerator.CodeGenerator
+	emailService           *EmailService
 }
 
-func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, JWTManager *manager.JWTManager, accessTokenTTL time.Duration, refreshTokenTTL time.Duration, verificationCodeTTL time.Duration, codeGenerator *codegenerator.CodeGenerator, emailService *EmailService) *UserService {
+func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, JWTManager *manager.JWTManager, accessTokenTTL time.Duration, refreshTokenTTL time.Duration, verificationCodeTTL time.Duration, codeGenerator *codegenerator.CodeGenerator, emailService *EmailService, verificationCodeLength int, apiUrl string) *UserService {
 	return &UserService{
-		hasher:              hasher,
-		repository:          repository,
-		JWTManager:          JWTManager,
-		AccessTokenTTL:      accessTokenTTL,
-		RefreshTokenTTL:     refreshTokenTTL,
-		emailService:        emailService,
-		VerificationCodeTTL: verificationCodeTTL,
-		codeGenerator:       codeGenerator,
+		hasher:                 hasher,
+		repository:             repository,
+		JWTManager:             JWTManager,
+		AccessTokenTTL:         accessTokenTTL,
+		RefreshTokenTTL:        refreshTokenTTL,
+		emailService:           emailService,
+		VerificationCodeTTL:    verificationCodeTTL,
+		codeGenerator:          codeGenerator,
+		VerificationCodeLength: verificationCodeLength,
+		ApiUrl:                 apiUrl,
 	}
 }
 
-func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) (types.VerificationCodeDTO, error) {
+func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) error {
 	if err := validateCredentials(input.Email, input.Password); err != nil {
-		return types.VerificationCodeDTO{}, err
+		return err
 	}
 	if err := validateUserData(input.FirstName, input.LastName, input.JobTitle); err != nil {
-		return types.VerificationCodeDTO{}, err
+		return err
 	}
 	passwordHash, err := s.hasher.Hash(input.Password)
 	if err != nil {
-		return types.VerificationCodeDTO{}, err
+		return err
 	}
-	verificationCode := s.codeGenerator.GenerateUniqueCode()
+	verificationCodeHash, err := s.hasher.Hash(input.Email)
+	if err != nil {
+		return err
+	}
+	verificationCode := fmt.Sprintf("%s%s", s.codeGenerator.RandomSecret(s.VerificationCodeLength), verificationCodeHash)
 
 	user := model.User{
 		FirstName: input.FirstName,
@@ -69,36 +77,30 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) (ty
 
 	isDuplicate, err := s.repository.IsDuplicate(ctx, input.Email)
 	if err != nil {
-		return types.VerificationCodeDTO{}, err
+		return err
 
 	}
 	if isDuplicate {
-		return types.VerificationCodeDTO{}, apperrors.ErrUserAlreadyExists
+		return apperrors.ErrUserAlreadyExists
 	}
 
 	if err := s.repository.Create(ctx, user); err != nil {
-		return types.VerificationCodeDTO{}, err
+		return err
 	}
 	go func() {
 		err = s.emailService.SendUserVerificationEmail(VerificationEmailInput{
-			Name:             input.FirstName,
-			Email:            input.Email,
-			VerificationCode: verificationCode,
+			Name:  input.FirstName,
+			Email: input.Email,
+			URL:   s.ApiUrl + "/api/v1/users/verify/" + verificationCode,
 		})
 		logger.Error(err)
 	}()
 
-	return types.VerificationCodeDTO{
-		Email:                       input.Email,
-		VerificationCodeExpiresTime: s.VerificationCodeTTL / time.Second,
-	}, nil
+	return nil
 }
 
 func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error) {
-	// err := validateCredentials(input.Email, input.Password)
-	// if err != nil {
-	// 	return types.Tokens{}, err
-	// }
+
 	passwordHash, err := s.hasher.Hash(input.Password)
 	if err != nil {
 		return types.Tokens{}, err
@@ -112,11 +114,20 @@ func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (ty
 		return types.Tokens{}, err
 	}
 
+	if user.Verification.Verified == false {
+		return types.Tokens{}, apperrors.ErrUserNotVerifyed
+	}
+
 	return s.createSession(ctx, user.ID)
 }
 
 func (s *UserService) LogOut(ctx context.Context, userID string) {
 
+}
+
+func (s *UserService) EnableTwoFactorAuth(ctx context.Context, userID string) error {
+
+	return nil
 }
 
 func (s *UserService) GetUserById(ctx context.Context, userID string) (types.UserDTO, error) {
@@ -130,21 +141,21 @@ func (s *UserService) GetUserById(ctx context.Context, userID string) (types.Use
 	}
 
 	user := types.UserDTO{
-		FirstName: res.FirstName,
-		LastName: res.LastName,
-		JobTitle: res.JobTitle,
-		Email: res.Email,
-		LastVisitTime: res.LastVisitTime,
+		FirstName:      res.FirstName,
+		LastName:       res.LastName,
+		JobTitle:       res.JobTitle,
+		Email:          res.Email,
+		LastVisitTime:  res.LastVisitTime,
 		RegisteredTime: res.RegisteredTime,
-		Verification: res.Verification.Verified,
-		Blocked: res.Blocked,
+		Verification:   res.Verification.Verified,
+		Blocked:        res.Blocked,
 	}
-	
+
 	return user, nil
 }
 
-func (s *UserService) Verify(ctx context.Context, email string, verificationCode string) error {
-	user, err := s.repository.GetUserByEmail(ctx, email)
+func (s *UserService) Verify(ctx context.Context, verificationCode string) error {
+	user, err := s.repository.GetUserByVerificationCode(ctx, verificationCode)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
 			return err
@@ -161,19 +172,25 @@ func (s *UserService) Verify(ctx context.Context, email string, verificationCode
 		return apperrors.ErrVerificationCodeExpired
 	}
 
-	return s.repository.Verify(ctx, user.ID, verificationCode)
+	return s.repository.Verify(ctx, verificationCode)
 }
 
-func (s *UserService) ResendVerificationCode(ctx context.Context, email string) (types.VerificationCodeDTO, error) {
-	verificationCode := s.codeGenerator.GenerateUniqueCode()
+func (s *UserService) ResendVerificationCode(ctx context.Context, email string) error {
 
 	user, err := s.repository.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			return types.VerificationCodeDTO{}, err
+			return err
 		}
-		return types.VerificationCodeDTO{}, err
+		return err
 	}
+
+	verificationCodeHash, err := s.hasher.Hash(email)
+	if err != nil {
+		return err
+	}
+	verificationCode := fmt.Sprintf("%s%s", s.codeGenerator.RandomSecret(s.VerificationCodeLength), verificationCodeHash)
+
 	verificationPayload := model.UserVerificationPayload{
 		VerificationCode:            verificationCode,
 		VerificationCodeExpiresTime: time.Now().Add(s.VerificationCodeTTL),
@@ -182,23 +199,20 @@ func (s *UserService) ResendVerificationCode(ctx context.Context, email string) 
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			return types.VerificationCodeDTO{}, err
+			return err
 		}
-		return types.VerificationCodeDTO{}, err
+		return err
 	}
 
 	go func() {
 		err = s.emailService.SendUserVerificationEmail(VerificationEmailInput{
-			Name:             user.FirstName,
-			Email:            user.Email,
-			VerificationCode: verificationCode,
+			Name:  user.FirstName,
+			Email: user.Email,
+			URL:   s.ApiUrl + "/api/v1/users/verify/" + verificationCode,
 		})
 		logger.Error(err)
 	}()
-	return types.VerificationCodeDTO{
-		Email:                       user.Email,
-		VerificationCodeExpiresTime: s.VerificationCodeTTL / time.Second,
-	}, nil
+	return nil
 }
 
 func (s *UserService) RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error) {

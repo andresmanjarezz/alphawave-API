@@ -14,12 +14,12 @@ import (
 )
 
 type UserServiceI interface {
-	SignUp(ctx context.Context, input types.UserSignUpDTO) (types.VerificationCodeDTO, error)
+	SignUp(ctx context.Context, input types.UserSignUpDTO) error
 	SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error)
 	GetUserById(ctx context.Context, userID string) (types.UserDTO, error)
-	ResendVerificationCode(ctx context.Context, email string) (types.VerificationCodeDTO, error)
+	ResendVerificationCode(ctx context.Context, email string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error)
-	Verify(ctx context.Context, email string, verificationCode string) error
+	Verify(ctx context.Context, verificationCode string) error
 }
 
 type Service struct {
@@ -27,20 +27,22 @@ type Service struct {
 }
 
 type Deps struct {
-	Hasher              *hash.Hasher
-	UserRepository      repository.UserRepository
-	JWTManager          *manager.JWTManager
-	AccessTokenTTL      time.Duration
-	RefreshTokenTTL     time.Duration
-	VerificationCodeTTL time.Duration
-	Sender              email.Sender
-	EmailConfig         config.EmailConfig
-	CodeGenerator       *codegenerator.CodeGenerator
+	Hasher                 *hash.Hasher
+	UserRepository         repository.UserRepository
+	JWTManager             *manager.JWTManager
+	AccessTokenTTL         time.Duration
+	RefreshTokenTTL        time.Duration
+	VerificationCodeTTL    time.Duration
+	Sender                 email.Sender
+	EmailConfig            config.EmailConfig
+	CodeGenerator          *codegenerator.CodeGenerator
+	VerificationCodeLength int
+	ApiUrl                 string
 }
 
 func NewService(deps *Deps) *Service {
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	return &Service{
-		UserService: NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService),
+		UserService: NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl),
 	}
 }

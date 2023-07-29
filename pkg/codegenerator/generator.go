@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+
+	"github.com/xlzd/gotp"
+
 )
 
 type CodeGenerator struct {
@@ -19,4 +22,8 @@ func (g *CodeGenerator) GenerateUniqueCode() string {
 	code := rand.Intn(90000) + 10000
 
 	return fmt.Sprintf("%05d", code)
+}
+
+func (g *CodeGenerator) RandomSecret(len int) string {
+	return gotp.RandomSecret(len)
 }

@@ -56,15 +56,17 @@ func Run() {
 	mongodb := mongoClient.Database(cfg.MongoDB.DBName)
 	repository := repository.NewRepository(mongodb)
 	service := service.NewService(&service.Deps{
-		UserRepository:      repository.User,
-		Hasher:              hasher,
-		JWTManager:          JWTManager,
-		AccessTokenTTL:      cfg.Auth.JWT.AccessTokenTTL,
-		RefreshTokenTTL:     cfg.Auth.JWT.RefreshTokenTTL,
-		VerificationCodeTTL: cfg.Auth.VerificationCodeTTL,
-		Sender:              emailSender,
-		EmailConfig:         cfg.Email,
-		CodeGenerator:       codeGenerator,
+		UserRepository:         repository.User,
+		Hasher:                 hasher,
+		JWTManager:             JWTManager,
+		AccessTokenTTL:         cfg.Auth.JWT.AccessTokenTTL,
+		RefreshTokenTTL:        cfg.Auth.JWT.RefreshTokenTTL,
+		VerificationCodeTTL:    cfg.Auth.VerificationCodeTTL,
+		Sender:                 emailSender,
+		EmailConfig:            cfg.Email,
+		CodeGenerator:          codeGenerator,
+		VerificationCodeLength: cfg.Auth.VerificationCodeLength,
+		ApiUrl:                 cfg.HTTP.Host,
 	})
 	handler := httpRoutes.NewHandler(service, JWTManager, cfg.Auth.JWT.RefreshTokenTTL)
 
