@@ -1,5 +1,5 @@
 http:
-  port: 9090
+  port: 8000
   readTimeout: 20s
   writeTimeout: 20s
   maxHeaderBytes: 1
