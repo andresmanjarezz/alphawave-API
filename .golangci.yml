@@ -17,7 +17,7 @@ linters:
     - gofumpt
     - goheader
     - goimports
-    - gomodguard
+    - gomodguard 
     - goprintffuncname
     - gosimple
     - govet
