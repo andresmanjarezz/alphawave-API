@@ -91,7 +91,7 @@ on:
       - main
 
 env:
-  REGISTRY: "registry.digitalocean.com/sandbox-registry"
+  REGISTRY: "registry.digitalocean.com/backend-service"
   API_IMAGE: "backend"
   NGINX_IMAGE: "reverse-proxy-backend"
   TAG: "latest"
