@@ -1,3 +1,88 @@
+# name: CI-prod
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# env:
+#   REGISTRY: "registry.digitalocean.com/sandbox-registry"
+#   API_IMAGE: "backend"
+#   NGINX_IMAGE: "reverse-proxy-backend"
+
+# jobs:
+#   build_and_push:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+
+#       - name: Build API container image
+#         run: docker build -f deploy/Dockerfile -t ${echo $REGISTRY}/${API_IMAGE}:$(echo $TAG) .
+#       - name: Build NGINX container image
+#         run: docker build -f deploy/nginx/Dockerfile -t $(echo REGISTRY)/$(echo $NGINX_IMAGE):$(echo $TAG) .
+
+#       - name: Install doctl
+#         uses: digitalocean/action-doctl@v2
+#         with:
+#           token: ${{ secrets:DIGITALOCEAN_ACCESS_TOKEN }}
+        
+#       - name: Log in to DigitalOcean Container Registry
+#         run: docker push $(echo $REGISTRY)/$(echo $API_IMAGE):$(echo $TAG)
+
+#       - name: Push NGINX image to DigitalOcean Container Registry
+#         run: docker push $(echo $REGISTRY)/$(echo $NGINX_IMAGE):$(echo $TAG)
+
+#   deploy:
+#     environment: production
+#     runs-on: ubuntu-latest
+#     needs: build_and_push
+
+#     steps:
+#       - uses: actions/checkout@master
+#       - name: copy file via ssh password
+#         uses: appleboy/scp-action@master
+#         with:
+#           host: ${{ secrets:HOST }}
+#           username: ${{ secrets.USERNAME }}
+#           key: ${{ secrets.SSHKEY }}
+#           source: "deploy/,!deploy/nginx,!deploy/Dockerfile"
+#           target: "api"
+#           strip_components: 1
+
+#         - name: Deploy to Digital Ocean droplet via SSH action
+#           uses: appleboy/ssh-action@v0.1.3
+#           env:
+#             SERVER_NAME: "back-end-production"
+#           with:
+#             host: ${{ secrets.HOST }}
+#             username: ${{ secrets.USERNAME }}
+#             key: ${{ secrets.SSHKEY }}
+#             envs: API_IMAGE,NGINX_IMAGE,REGISTRY
+#             # Set env variables
+#             export MONGODB_URL="${{ secrets.MONGODB_URL }}"
+#             export MONGODB_USERNAME="${{ secrets.MONGODB_USERNAME }}"
+#             export MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}"
+#             export MONGODB_NAME="${{ secrets.MONGODB_NAME }}"
+#             export HTTP_HOST="${{ secrets.HTTP_HOST }}"
+#             export FRONT_END_URL="${{ secrets.FRONT_END_URL }}"
+#             export PASSWORD_SALT="${{ secrets.PASSWORD_SALT }}"
+#             export SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
+#             export JWT_SIGNING_KEY="${{ secrets.JWT_SIGNING_KEY }}"
+#             export REGISTRY=$(echo $REGISTRY)
+#             export NGINX_IMAGE=$(echo $NGINX_IMAGE)
+#             export API_IMAGE=$(echo $API_IMAGE)
+
+#             docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} $(echo $REGISTRY)
+
+#             cd app
+#             docker-compose stop
+#             docker-compose rm -f
+#             docker-compose pull
+#             docker-compose up -d --force-recreate nginx
+
+
 name: CI-prod
 
 on:
@@ -9,6 +94,7 @@ env:
   REGISTRY: "registry.digitalocean.com/sandbox-registry"
   API_IMAGE: "backend"
   NGINX_IMAGE: "reverse-proxy-backend"
+  TAG: "latest"
 
 jobs:
   build_and_push:
@@ -19,20 +105,21 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build API container image
-        run: docker build -f deploy/Dockerfile -t ${echo $REGISTRY}/${API_IMAGE}:$(echo $TAG) .
+        run: docker build -f deploy/Dockerfile -t ${{ env.REGISTRY }}/${{ env.API_IMAGE }}:${{ env.TAG }} .
+      
       - name: Build NGINX container image
-        run: docker build -f deploy/nginx/Dockerfile -t $(echo REGISTRY)/$(echo $NGINX_IMAGE):$(echo $TAG) .
+        run: docker build -f deploy/nginx/Dockerfile -t ${{ env.REGISTRY }}/${{ env.NGINX_IMAGE }}:${{ env.TAG }} .
 
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets:DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         
-      - name: Log in to DigitalOcean Container Registry
-        run: docker push $(echo $REGISTRY)/$(echo $API_IMAGE):$(echo $TAG)
+      - name: Push API image to DigitalOcean Container Registry
+        run: docker push ${{ env.REGISTRY }}/${{ env.API_IMAGE }}:${{ env.TAG }}
 
       - name: Push NGINX image to DigitalOcean Container Registry
-        run: docker push $(echo $REGISTRY)/$(echo $NGINX_IMAGE):$(echo $TAG)
+        run: docker push ${{ env.REGISTRY }}/${{ env.NGINX_IMAGE }}:${{ env.TAG }}
 
   deploy:
     environment: production
@@ -40,43 +127,38 @@ jobs:
     needs: build_and_push
 
     steps:
-      - uses: actions/checkout@master
-      - name: copy file via ssh password
+      - uses: actions/checkout@v2
+      - name: Copy files via SSH
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets:HOST }}
+          host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSHKEY }}
           source: "deploy/,!deploy/nginx,!deploy/Dockerfile"
           target: "api"
           strip_components: 1
 
-        - name: Deploy to Digital Ocean droplet via SSH action
-          uses: appleboy/ssh-action@v0.1.3
-          env:
-            SERVER_NAME: "back-end-production"
-          with:
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.USERNAME }}
-            key: ${{ secrets.SSHKEY }}
-            envs: API_IMAGE,NGINX_IMAGE,REGISTRY
-            # Set env variables
-            export MONGODB_URL="${{ secrets.MONGODB_URL }}"
-            export MONGODB_USERNAME="${{ secrets.MONGODB_USERNAME }}"
-            export MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}"
-            export MONGODB_NAME="${{ secrets.MONGODB_NAME }}"
-            export HTTP_HOST="${{ secrets.HTTP_HOST }}"
-            export FRONT_END_URL="${{ secrets.FRONT_END_URL }}"
-            export PASSWORD_SALT="${{ secrets.PASSWORD_SALT }}"
-            export SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
-            export JWT_SIGNING_KEY="${{ secrets.JWT_SIGNING_KEY }}"
-            export REGISTRY=$(echo $REGISTRY)
-            export NGINX_IMAGE=$(echo $NGINX_IMAGE)
-            export API_IMAGE=$(echo $API_IMAGE)
+      - name: Deploy to Digital Ocean droplet via SSH action
+        uses: appleboy/ssh-action@master  
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          envs: API_IMAGE,NGINX_IMAGE,REGISTRY,TAG,MONGODB_URL,MONGODB_USERNAME,MONGODB_PASSWORD,MONGODB_NAME,HTTP_HOST,FRONT_END_URL,PASSWORD_SALT,SMTP_PASSWORD,JWT_SIGNING_KEY
+          script: |
+            export MONGODB_URL=${{ secrets.MONGODB_URL }}
+            export MONGODB_USERNAME=${{ secrets.MONGODB_USERNAME }}
+            export MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
+            export MONGODB_NAME=${{ secrets.MONGODB_NAME }}
+            export HTTP_HOST=${{ secrets.HTTP_HOST }}
+            export FRONT_END_URL=${{ secrets.FRONT_END_URL }}
+            export PASSWORD_SALT=${{ secrets.PASSWORD_SALT }}
+            export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            export JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}
 
-            docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} $(echo $REGISTRY)
+            docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} ${{ env.REGISTRY }}
 
-            cd app
+            cd api  # возможно, вы хотели перейти в каталог "api", а не "app"
             docker-compose stop
             docker-compose rm -f
             docker-compose pull
