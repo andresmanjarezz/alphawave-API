@@ -140,6 +140,8 @@ jobs:
 
       - name: Deploy to Digital Ocean droplet via SSH action
         uses: appleboy/ssh-action@master  
+        env:
+          SERVER_NAME: "api.alphawavetechnology.com"
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -155,6 +157,12 @@ jobs:
             export PASSWORD_SALT=${{ secrets.PASSWORD_SALT }}
             export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             export JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}
+
+            export REGISTRY=$(echo $REGISTRY)
+            export NGINX_IMAGE=$(echo $NGINX_IMAGE)
+            export API_IMAGE=$(echo $API_IMAGE)
+            export TAG=$(echo $TAG)
+            export SERVER_NAME=$(echo $SERVER_NAME)
 
             docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} ${{ env.REGISTRY }}
 
