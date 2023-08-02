@@ -1,6 +1,6 @@
 FROM golang:1.20-alpine3.18 AS builder
 
-WORKDIR /app/
+WORKDIR /app
 
 COPY . .
 
@@ -14,7 +14,11 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 COPY --from=0 app/.bin/app .
+COPY --from=0 app/configs/ ./configs/ 
+COPY --from=0 app/templates/ ./templates/
+
 
 EXPOSE 8000
+
 
 CMD ["./app"]
