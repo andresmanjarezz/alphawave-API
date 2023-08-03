@@ -24,7 +24,12 @@ http {
 
     client_max_body_size 0;
 
-
+    server {
+       listen 80;
+       listen [::]:80;
+       server_name ${SERVER_NAME};
+       return 302 https://$server_name$request_uri;
+    }
     server {
      listen              443 ssl;
      server_name         ${SERVER_NAME};
