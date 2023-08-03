@@ -12,15 +12,15 @@ services:
       options:
         tag: "api-production"
     environment:
-      - MONGODB_URL
-      - MONGODB_USERNAME
-      - MONGODB_PASSWORD
-      - MONGODB_NAME
-      - SMTP_PASSWORD
-      - FRONT_END_URL
-      - PASSWORD_SALT
-      - JWT_SIGNING_KEY
-      - HTTP_HOST
+      - MONGODB_URL=${MONGODB_URL}
+      - MONGODB_USERNAME=${MONGODB_USERNAME}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - MONGODB_NAME=${MONGODB_NAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FRONT_END_URL=${FRONT_END_URL}
+      - PASSWORD_SALT=${PASSWORD_SALT}
+      - JWT_SIGNING_KEY=${JWT_SIGNING_KEY}
+      - HTTP_HOST=${HTTP_HOST}
 
   nginx:
     image: ${REGISTRY}/${NGINX_IMAGE}:${TAG}
