@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,6 +29,7 @@ func Run() {
 
 	cfg, err := config.Init(configDir)
 
+	fmt.Print(cfg.MongoDB.Url)
 	if err != nil {
 		logger.Errorf("error parse config. err: %v", err)
 	}
