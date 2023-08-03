@@ -137,6 +137,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSHKEY }}
+          port: 6161
           source: "deploy/,!deploy/nginx,!deploy/Dockerfile"
           target: "api"
           strip_components: 1
