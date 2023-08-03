@@ -21,7 +21,7 @@ services:
       - PASSWORD_SALT=${PASSWORD_SALT}
       - JWT_SIGNING_KEY=${JWT_SIGNING_KEY}
       - HTTP_HOST=${HTTP_HOST}
-
+ 
   nginx:
     image: ${REGISTRY}/${NGINX_IMAGE}:${TAG}
     container_name: backend-api-proxy
