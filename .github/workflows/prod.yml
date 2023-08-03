@@ -146,7 +146,7 @@ jobs:
       - name: Deploy to Digital Ocean droplet via SSH action
         uses: appleboy/ssh-action@master  
         env:
-          SERVER_NAME: "gasstrem.com"
+          SERVER_NAME: "api.alphawavetechnology.com"
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
