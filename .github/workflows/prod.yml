@@ -171,7 +171,7 @@ jobs:
 
             docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} ${{ env.REGISTRY }}
 
-            cd api  # возможно, вы хотели перейти в каталог "api", а не "app"
+            cd api 
             docker-compose stop
             docker-compose rm -f
             docker-compose pull
