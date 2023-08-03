@@ -12,9 +12,12 @@ services:
       options:
         tag: "api-production"
     environment:
-      - MONGO_URI
-      - MONGO_USER
-      - MONGO_PASS
+      - MONGODB_URL
+      - MONGODB_USERNAME
+      - MONGODB_PASSWORD
+      - MONGODB_NAME
+      - SMTP_PASSWORD
+      - FRONT_END_URL
       - PASSWORD_SALT
       - JWT_SIGNING_KEY
       - HTTP_HOST
