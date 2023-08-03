@@ -156,8 +156,8 @@ jobs:
           envs: API_IMAGE,NGINX_IMAGE,REGISTRY,SERVER_NAME,TAG,MONGODB_URL,MONGODB_USERNAME,MONGODB_PASSWORD,MONGODB_NAME,HTTP_HOST,FRONT_END_URL,PASSWORD_SALT,SMTP_PASSWORD,JWT_SIGNING_KEY
           script: |
             export MONGODB_URL="${{ secrets.MONGODB_URL }}"
-            export MONGODB_USERNAME="${{ secrets.MONGODB_USERNAME }}"
-            export MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}"
+            export MONGODB_USERNAME=${{ secrets.MONGODB_USERNAME }}
+            export MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
             export MONGODB_NAME="${{ secrets.MONGODB_NAME }}"
             export HTTP_HOST=${{ secrets.HTTP_HOST }}
             export FRONT_END_URL=${{ secrets.FRONT_END_URL }}
