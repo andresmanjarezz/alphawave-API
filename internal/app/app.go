@@ -29,7 +29,7 @@ func Run() {
 
 	cfg, err := config.Init(configDir)
 
-	fmt.Print(cfg.MongoDB.Url)
+	fmt.Print("url: %s", cfg.MongoDB.Url)
 	if err != nil {
 		logger.Errorf("error parse config. err: %v", err)
 	}
