@@ -29,7 +29,7 @@ services:
       - 80:80
       - 443:443
     environment:
-      - API_HOST=backend-api
+      - API_HOST=api.alphawavetechnology.com
       - API_PORT=8000
       - SERVER_NAME=${SERVER_NAME}
     depends_on:
