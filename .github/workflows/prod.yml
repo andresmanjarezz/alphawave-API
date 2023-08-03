@@ -154,7 +154,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           envs: API_IMAGE,NGINX_IMAGE,REGISTRY,SERVER_NAME,TAG,MONGODB_URL,MONGODB_USERNAME,MONGODB_PASSWORD,MONGODB_NAME,HTTP_HOST,FRONT_END_URL,PASSWORD_SALT,SMTP_PASSWORD,JWT_SIGNING_KEY
-          script:
+          script: |
             export MONGODB_URL=${{ secrets.MONGODB_URL }}
             export MONGODB_USERNAME=${{ secrets.MONGODB_USERNAME }}
             export MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
