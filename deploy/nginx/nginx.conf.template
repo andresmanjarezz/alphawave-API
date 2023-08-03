@@ -24,17 +24,12 @@ http {
 
     client_max_body_size 0;
 
-    server {
-       listen 80;
-       listen [::]:80;
-       server_name ${SERVER_NAME};
-       return 302 https://$server_name$request_uri;
-    }
+
     server {
      listen              443 ssl;
      server_name         ${SERVER_NAME};
-     ssl_certificate         /etc/nginx/certs/api.prod.cert.pem;
-     ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
+     # ssl_certificate         /etc/nginx/certs/api.prod.cert.pem;
+     # ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
       location / {
           proxy_pass http://${API_HOST}:${API_PORT};
