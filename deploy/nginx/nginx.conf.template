@@ -37,7 +37,7 @@ http {
      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
       location / {
-          proxy_pass http://$backend-api:8000;
+          proxy_pass http://backend-api:8000;
       }
     }
 }
