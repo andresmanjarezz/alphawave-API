@@ -10,4 +10,4 @@ ___
     SMTP_PASSWORD=SMTP_SERVER_PASSWORD
     JWT_SIGNING_KEY=SECRET_KEY
 
-Use go run cmd/app/main.go to build&run project, 
+Use go run cmd/app/main.go to build&run project,  
