@@ -37,7 +37,7 @@ http {
      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
       location / {
-          proxy_pass http://${API_HOST}:${API_PORT};
+          proxy_pass https://${API_HOST}:${API_PORT};
       }
     }
 }
