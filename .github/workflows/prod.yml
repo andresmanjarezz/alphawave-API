@@ -147,7 +147,7 @@ jobs:
         uses: appleboy/ssh-action@master  
         env:
           SERVER_NAME: "api.alphawavetechnology.com"
-        with:
+        with: 
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSHKEY }}
