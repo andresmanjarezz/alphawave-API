@@ -27,17 +27,17 @@ http {
     server {
        listen 80;
        listen [::]:80;
-       server_name ${SERVER_NAME};
+       server_name api.alphawavetechnology.com;
        return 302 https://$server_name$request_uri;
     }
     server {
      listen              443 ssl;
-     server_name         ${SERVER_NAME};
+     server_name         api.alphawavetechnology.com;
      ssl_certificate         /etc/nginx/certs/api.prod.cert.pem;
      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
       location / {
-          proxy_pass http://${API_HOST}:${API_PORT};
+          proxy_pass http://$backend-api:8000;
       }
     }
 }
