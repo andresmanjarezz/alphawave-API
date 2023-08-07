@@ -27,7 +27,7 @@ http {
     server {
        listen 80;
        listen [::]:80;
-       server_name api.alphawavetechnology.com;
+       server_name ${SERVER_NAME};
        return 302 https://$server_name$request_uri;
     }
     server {
@@ -37,7 +37,7 @@ http {
      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
       location / {
-          proxy_pass http://backend-api:8000;
+          proxy_pass http://${API_HOST}:${API_PORT};
       }
     }
 }
