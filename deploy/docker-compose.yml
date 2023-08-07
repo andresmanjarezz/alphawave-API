@@ -37,3 +37,9 @@ services:
       - SERVER_NAME=${SERVER_NAME}
     depends_on:
       - api
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    external: true

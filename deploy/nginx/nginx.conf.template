@@ -41,7 +41,7 @@ http {
       }
 
       location /mattermost/ {
-          proxy_pass http://api.alphawavetechnology.com:8065;
+          proxy_pass http://mattermost:8065;
       }
 
     }
