@@ -39,8 +39,10 @@ http {
       location / {
           proxy_pass http://${API_HOST}:${API_PORT};
       }
+
       location /mattermost/ {
-        proxy_pass http://localhost:8065
+          proxy_pass http://localhost:8065;
       }
+
     }
 }
