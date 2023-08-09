@@ -11,7 +11,9 @@ services:
       - 7000:8000
     depends_on:
       - mongodb
+
     volumes:
+      - ./.bin/:/root/
       - ./configs/:/root/configs/
       - ./templates/:/root/templates/
     env_file:

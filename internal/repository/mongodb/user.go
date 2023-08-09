@@ -140,8 +140,27 @@ func (r *UserRepository) Verify(ctx context.Context, verificationCode string) er
 	defer cancel()
 
 	_, err := r.db.UpdateOne(nCtx, bson.M{"verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true, "verification.verificationCode": ""}})
-
 	return err
+}
+
+func (r *UserRepository) ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	ObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return err
+	}
+
+	res, err := r.db.UpdateOne(nCtx, bson.M{"_id": ObjectID, "password": oldPassword}, bson.M{"$set": bson.M{"password": newPassword}})
+
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return apperrors.ErrUserNotFound
+	}
+
+	return nil
 }
 
 func (r *UserRepository) GetUserByVerificationCode(ctx context.Context, hash string) (model.User, error) {

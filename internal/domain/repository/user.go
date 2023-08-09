@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
-
 )
 
 type UserRepository interface {
@@ -13,6 +12,7 @@ type UserRepository interface {
 	GetByСredentials(ctx context.Context, email, password string) (model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (model.User, error)
 	GetUserById(ctx context.Context, userID string) (model.User, error)
+	ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error
 	GetUserByVerificationCode(ctx context.Context, hash string) (model.User, error)
 	ChangeVerificationCode(ctx context.Context, email string, input model.UserVerificationPayload) error
 	Verify(ctx context.Context, verificationCode string) error

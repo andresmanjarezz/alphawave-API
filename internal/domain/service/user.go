@@ -252,3 +252,23 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 	err = s.repository.SetSession(ctx, userID, session, time.Now())
 	return types.Tokens(tokens), err
 }
+
+func (s *UserService) ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error {
+
+	passwordHash, err := s.hasher.Hash(newPassword)
+	oldPasswordHash, err := s.hasher.Hash(oldPassword)
+	if err != nil {
+		return err
+	}
+
+	err = s.repository.ChangePassword(ctx, userID, passwordHash, oldPasswordHash)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return err
+		}
+		return err
+	}
+
+	return nil
+}

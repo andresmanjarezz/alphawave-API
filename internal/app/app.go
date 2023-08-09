@@ -27,14 +27,14 @@ const configDir = "configs"
 func Run() {
 
 	cfg, err := config.Init(configDir)
-	cfg.MongoDB.Username = ""
-	cfg.MongoDB.Password = ""
+
 	if err != nil {
 		logger.Errorf("error parse config. err: %v", err)
 	}
 
 	// -----
 	hasher := hash.NewHasher(cfg.Auth.PasswordSalt)
+
 	mongoClient, err := mongodb.NewConnection(cfg.MongoDB.Url, cfg.MongoDB.Username, cfg.MongoDB.Password)
 	if err != nil {
 		logger.Errorf("failed to create new mongo client. err: %v", err)

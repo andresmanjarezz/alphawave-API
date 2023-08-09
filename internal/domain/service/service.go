@@ -17,6 +17,7 @@ type UserServiceI interface {
 	SignUp(ctx context.Context, input types.UserSignUpDTO) error
 	SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error)
 	GetUserById(ctx context.Context, userID string) (types.UserDTO, error)
+	ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error
 	ResendVerificationCode(ctx context.Context, email string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error)
 	Verify(ctx context.Context, verificationCode string) error

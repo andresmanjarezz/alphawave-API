@@ -9,7 +9,6 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/gin-gonic/gin"
-
 )
 
 func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
@@ -23,9 +22,15 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 		authenticated := users.Group("/", h.userIdentity)
 		{
 			authenticated.GET("/me", h.GetUser)
+			authenticated.POST("/change-password", h.ChangePassword)
 		}
 	}
 
+}
+
+type ChangePasswordInput struct {
+	NewPassword string `json:"newPassword"`
+	OldPassword string `json:"oldPassword"`
 }
 
 type UserSignUpInput struct {
@@ -231,4 +236,31 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/verification-done", h.frontEndUrl))
 	// c.String(http.StatusOK, "success")
 
+}
+
+func (h *HandlerV1) ChangePassword(c *gin.Context) {
+	var input ChangePasswordInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	err = h.service.UserService.ChangePassword(c.Request.Context(), userID, input.NewPassword, input.OldPassword)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	c.String(http.StatusOK, "success")
 }
