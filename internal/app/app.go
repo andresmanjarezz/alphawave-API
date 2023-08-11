@@ -58,6 +58,7 @@ func Run() {
 	repository := repository.NewRepository(mongodb)
 	service := service.NewService(&service.Deps{
 		UserRepository:         repository.User,
+		TasksRepository:        repository.Tasks,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
 		AccessTokenTTL:         cfg.Auth.JWT.AccessTokenTTL,

@@ -45,10 +45,9 @@ func (r *UserRepository) GetByСredentials(ctx context.Context, email, password 
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return user, apperrors.ErrUserNotFound
 		}
-
 		return user, err
-
 	}
+
 	if err := res.Decode(&user); err != nil {
 		return user, err
 	}
@@ -70,10 +69,9 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (mode
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return user, apperrors.ErrUserNotFound
 		}
-
 		return user, err
-
 	}
+
 	if err := res.Decode(&user); err != nil {
 		return user, err
 	}

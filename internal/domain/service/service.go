@@ -23,13 +23,21 @@ type UserServiceI interface {
 	Verify(ctx context.Context, verificationCode string) error
 }
 
+type TasksServiceI interface {
+	Create(ctx context.Context, userID string, input types.TasksCreateDTO) error
+	GetById(ctx context.Context, userID, taskID string) (types.TaskDTO, error)
+	GetAll(ctx context.Context, userID string) ([]types.TaskDTO, error)
+}
+
 type Service struct {
-	UserService UserServiceI
+	UserService  UserServiceI
+	TasksService TasksServiceI
 }
 
 type Deps struct {
 	Hasher                 *hash.Hasher
 	UserRepository         repository.UserRepository
+	TasksRepository        repository.TasksRepository
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
 	RefreshTokenTTL        time.Duration
@@ -44,6 +52,7 @@ type Deps struct {
 func NewService(deps *Deps) *Service {
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	return &Service{
-		UserService: NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl),
+		UserService:  NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl),
+		TasksService: NewTasksService(deps.TasksRepository),
 	}
 }

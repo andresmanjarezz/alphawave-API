@@ -6,14 +6,13 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/service"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/auth/manager"
 	"github.com/gin-gonic/gin"
-
 )
 
 type HandlerV1 struct {
 	service         *service.Service
 	JWTManager      *manager.JWTManager
 	refreshTokenTTL time.Duration
-	frontEndUrl string
+	frontEndUrl     string
 }
 
 func NewHandler(service *service.Service, JWTManager *manager.JWTManager, refreshTokenTTL time.Duration, frontEndUrl string) *HandlerV1 {
@@ -21,7 +20,7 @@ func NewHandler(service *service.Service, JWTManager *manager.JWTManager, refres
 		service:         service,
 		JWTManager:      JWTManager,
 		refreshTokenTTL: refreshTokenTTL,
-		frontEndUrl: frontEndUrl,
+		frontEndUrl:     frontEndUrl,
 	}
 }
 
@@ -29,5 +28,6 @@ func (h *HandlerV1) InitRoutes(api *gin.RouterGroup) {
 	v1 := api.Group("/v1")
 	{
 		h.initUserRoutes(v1)
+		h.initTasksRoutes(v1)
 	}
 }

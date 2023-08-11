@@ -114,7 +114,7 @@ func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (ty
 		return types.Tokens{}, err
 	}
 
-	if user.Verification.Verified == false {
+	if !user.Verification.Verified {
 		return types.Tokens{}, apperrors.ErrUserNotVerifyed
 	}
 
@@ -256,6 +256,9 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 func (s *UserService) ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error {
 
 	passwordHash, err := s.hasher.Hash(newPassword)
+	if err != nil {
+		return err
+	}
 	oldPasswordHash, err := s.hasher.Hash(oldPassword)
 	if err != nil {
 		return err

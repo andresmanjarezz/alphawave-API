@@ -1,6 +1,10 @@
 # AlphaWave
 ___
-## Create .env file in root directory and add following values:
+![AlphaWave logo](assets/logo.png)
+
+## Quick start
+
+### Create .env file in root directory and add following values:
     MONGODB_URL=mongodb://DB_URL
     MONGODB_USERNAME=DB_USERNAME
     MONGODB_PASSWORD=DB_PASSWORD

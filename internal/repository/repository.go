@@ -7,11 +7,13 @@ import (
 )
 
 type Repository struct {
-	User repository.UserRepository
+	User  repository.UserRepository
+	Tasks repository.TasksRepository
 }
 
 func NewRepository(db *mongo.Database) *Repository {
 	return &Repository{
-		User: mongodb.NewUserRepository(db),
+		User:  mongodb.NewUserRepository(db),
+		Tasks: mongodb.NewTasksRepository(db),
 	}
 }
