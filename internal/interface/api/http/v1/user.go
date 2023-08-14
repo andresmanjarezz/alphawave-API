@@ -8,21 +8,25 @@ import (
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
 func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 	users := api.Group("/users")
 	{
-		users.POST("/sign-up", h.SignUp)
-		users.POST("/sign-in", h.SignIn)
+		users.POST("/sign-up", h.signUp)
+		users.POST("/sign-in", h.signIn)
 		users.GET("/verify/:code", h.userVerify)
-		users.POST("/resend-verification", h.ResendVerificationCode)
+		users.POST("/resend-verification", h.resendVerificationCode)
 		users.GET("/auth/refresh", h.userRefresh)
+		users.POST("/forgot-password", h.forgotPassword)
+		users.GET("/forgot-password-verify", h.verifyForgotPasswordToken)
+		users.POST("/reset-password", h.resetPassword)
 		authenticated := users.Group("/", h.userIdentity)
 		{
-			authenticated.GET("/me", h.GetUser)
-			authenticated.POST("/change-password", h.ChangePassword)
+			authenticated.GET("/me", h.getUser)
+			authenticated.POST("/change-password", h.changePassword)
 		}
 	}
 
@@ -44,6 +48,13 @@ type UserSignUpInput struct {
 type UserSignInInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type ResetPasswordInput struct {
+	Email       string `json:"email"`
+	Token       string `json:"token"`
+	TokenResult string `json:"tokenResult"`
+	Password    string `json:"password"`
 }
 
 type UserVerifyInput struct {
@@ -69,7 +80,7 @@ type EmailInput struct {
 	Email string `json:"email"`
 }
 
-func (h *HandlerV1) SignUp(c *gin.Context) {
+func (h *HandlerV1) signUp(c *gin.Context) {
 	var input UserSignUpInput
 
 	if err := c.BindJSON(&input); err != nil {
@@ -107,7 +118,7 @@ func (h *HandlerV1) SignUp(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-func (h *HandlerV1) GetUser(c *gin.Context) {
+func (h *HandlerV1) getUser(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
@@ -126,7 +137,7 @@ func (h *HandlerV1) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func (h *HandlerV1) ResendVerificationCode(c *gin.Context) {
+func (h *HandlerV1) resendVerificationCode(c *gin.Context) {
 	var input EmailInput
 
 	if err := c.BindJSON(&input); err != nil {
@@ -147,7 +158,7 @@ func (h *HandlerV1) ResendVerificationCode(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (h *HandlerV1) SignIn(c *gin.Context) {
+func (h *HandlerV1) signIn(c *gin.Context) {
 	var input UserSignInInput
 
 	if err := c.BindJSON(&input); err != nil {
@@ -238,7 +249,7 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 }
 
-func (h *HandlerV1) ChangePassword(c *gin.Context) {
+func (h *HandlerV1) changePassword(c *gin.Context) {
 	var input ChangePasswordInput
 
 	if err := c.BindJSON(&input); err != nil {
@@ -263,4 +274,81 @@ func (h *HandlerV1) ChangePassword(c *gin.Context) {
 	}
 
 	c.String(http.StatusOK, "success")
+}
+
+func (h *HandlerV1) forgotPassword(c *gin.Context) {
+	var input EmailInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	err := h.service.UserService.ForgotPassword(c.Request.Context(), input.Email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		if errors.Is(err, apperrors.ErrUserBlocked) {
+			newResponse(c, http.StatusForbidden, apperrors.ErrUserBlocked.Error())
+			return
+		}
+		logger.Error(err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) verifyForgotPasswordToken(c *gin.Context) {
+	var (
+		email       = c.Query("email")
+		token       = c.Query("token")
+		tokenResult = c.Query("result")
+	)
+
+	if email == "" || token == "" || tokenResult == "" {
+		newResponse(c, http.StatusBadRequest, "url is incorrect")
+		logger.Error("emial or token or result is empty")
+		return
+	}
+
+	tokenPayload, err := h.service.UserService.VerifyForgotPasswordToken(c.Request.Context(), email, token, tokenResult)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusBadRequest, "url is incorrect")
+			logger.Error(err)
+			return
+		}
+		logger.Error(err)
+		newResponse(c, http.StatusBadRequest, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	url := fmt.Sprintf("http://%s/reset-password?email=%s&token=%s&result=%s", h.frontEndUrl, tokenPayload.Email, tokenPayload.Token, tokenPayload.ResultToken)
+	c.Redirect(http.StatusFound, url)
+}
+
+func (h *HandlerV1) resetPassword(c *gin.Context) {
+	var input ResetPasswordInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	err := h.service.UserService.ResetPassword(c.Request.Context(), input.Email, input.Token, input.TokenResult, input.Password)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
 }

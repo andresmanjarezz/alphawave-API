@@ -13,7 +13,10 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (model.User, error)
 	GetUserById(ctx context.Context, userID string) (model.User, error)
 	ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error
+	ResetPassword(ctx context.Context, token, email, password string) error
+	SetForgotPassword(ctx context.Context, email string, input model.ForgotPasswordPayload) error
 	GetUserByVerificationCode(ctx context.Context, hash string) (model.User, error)
+	GetByForgotPasswordToken(ctx context.Context, token, tokenResult string) (model.User, error)
 	ChangeVerificationCode(ctx context.Context, email string, input model.UserVerificationPayload) error
 	Verify(ctx context.Context, verificationCode string) error
 	GetByRefreshToken(ctx context.Context, refreshToken string) (model.User, error)

@@ -275,3 +275,92 @@ func (s *UserService) ChangePassword(ctx context.Context, userID, newPassword, o
 
 	return nil
 }
+
+func (s *UserService) ForgotPassword(ctx context.Context, email string) error {
+	user, err := s.repository.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return apperrors.ErrUserNotFound
+		}
+		return err
+	}
+
+	if user.Blocked {
+		return apperrors.ErrUserBlocked
+	}
+	tokenHash, err := s.hasher.Hash(user.Email)
+	if err != nil {
+		return err
+	}
+
+	result := fmt.Sprintf("%s.%s", s.codeGenerator.RandomSecret(30), tokenHash)
+
+	tokenExpiresTime := time.Now().Add(time.Hour * 1)
+
+	err = s.repository.SetForgotPassword(ctx, user.Email, model.ForgotPasswordPayload{
+		Token:            tokenHash,
+		ResultToken:      result,
+		TokenExpiresTime: tokenExpiresTime,
+	})
+
+	if err != nil {
+		return err
+	}
+	if err := s.emailService.SendUserForgotPassword(ForgotPasswordInput{
+		Email:            user.Email,
+		TokenExpiresTime: 1,
+		URL:              s.ApiUrl + fmt.Sprintf("/api/v1/users/forgot-password-verify?email=%s&token=%s&result=%s", user.Email, tokenHash, result),
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserService) VerifyForgotPasswordToken(ctx context.Context, email, token, tokenResult string) (types.ForgotPasswordPayloadDTO, error) {
+
+	user, err := s.repository.GetByForgotPasswordToken(ctx, token, tokenResult)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+
+			return types.ForgotPasswordPayloadDTO{}, apperrors.ErrUserNotFound
+		}
+		return types.ForgotPasswordPayloadDTO{}, err
+	}
+
+	if user.Email != email {
+
+		return types.ForgotPasswordPayloadDTO{}, apperrors.ErrUserNotFound
+	}
+
+	return types.ForgotPasswordPayloadDTO{
+		Email:       user.Email,
+		Token:       token,
+		ResultToken: tokenResult,
+	}, nil
+}
+
+func (s *UserService) ResetPassword(ctx context.Context, email, token, tokenResult, password string) error {
+	user, err := s.repository.GetByForgotPasswordToken(ctx, token, tokenResult)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return apperrors.ErrUserNotFound
+		}
+		return err
+	}
+
+	if user.Email != email {
+		return apperrors.ErrUserNotFound
+	}
+
+	passwordHash, err := s.hasher.Hash(password)
+	if err != nil {
+		return err
+	}
+
+	err = s.repository.ResetPassword(ctx, token, user.Email, passwordHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -23,9 +23,11 @@ func NewTasksService(repository repository.TasksRepository) *TasksService {
 func (s *TasksService) Create(ctx context.Context, userID string, input types.TasksCreateDTO) error {
 
 	task := model.Task{
-		UserID: userID,
-		Title:  input.Title,
-		Order:  input.Order,
+		UserID:   userID,
+		Title:    input.Title,
+		Status:   input.Status,
+		Priority: input.Priority,
+		Order:    input.Order,
 	}
 	err := s.repository.Create(ctx, task)
 	if err != nil {
@@ -44,9 +46,11 @@ func (s *TasksService) GetById(ctx context.Context, userID, taskID string) (type
 	}
 
 	return types.TaskDTO{
-		ID:    task.ID,
-		Title: task.Title,
-		Order: task.Order,
+		ID:       task.ID,
+		Title:    task.Title,
+		Status:   task.Status,
+		Priority: task.Priority,
+		Order:    task.Order,
 	}, nil
 }
 
@@ -64,11 +68,37 @@ func (s *TasksService) GetAll(ctx context.Context, userID string) ([]types.TaskD
 
 	for i := range tasksIn {
 		tasks[i] = types.TaskDTO{
-			ID:    tasksIn[i].ID,
-			Title: tasksIn[i].Title,
-			Order: tasksIn[i].Order,
+			ID:       tasksIn[i].ID,
+			Title:    tasksIn[i].Title,
+			Status:   tasksIn[i].Status,
+			Priority: tasksIn[i].Priority,
+			Order:    tasksIn[i].Order,
 		}
 	}
 
 	return tasks, nil
+}
+
+func (s *TasksService) UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error) {
+	task, err := s.repository.UpdateById(ctx, userID, model.Task{
+		ID:       input.ID,
+		Title:    input.Title,
+		Priority: input.Priority,
+		Status:   input.Status,
+		Order:    input.Order,
+	})
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return types.TaskDTO{}, apperrors.ErrDocumentNotFound
+		}
+		return types.TaskDTO{}, err
+	}
+	return types.TaskDTO{
+		ID:       task.ID,
+		Title:    task.Title,
+		Priority: task.Priority,
+		Status:   task.Status,
+		Order:    task.Order,
+	}, err
 }

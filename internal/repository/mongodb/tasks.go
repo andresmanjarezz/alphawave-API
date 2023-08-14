@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -89,4 +90,46 @@ func (r *TasksRepository) GetAll(ctx context.Context, userID string) ([]model.Ta
 	}
 
 	return tasks, nil
+}
+
+func (r *TasksRepository) UpdateById(ctx context.Context, userID string, input model.Task) (model.Task, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	ObjectID, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return model.Task{}, err
+	}
+
+	filter := bson.M{"_id": ObjectID, "userID": userID}
+
+	inputByte, err := bson.Marshal(input)
+
+	if err != nil {
+		return model.Task{}, fmt.Errorf("failed to marshal document. error: %s", err)
+	}
+
+	var updateObj bson.M
+
+	err = bson.Unmarshal(inputByte, &updateObj)
+	if err != nil {
+		return model.Task{}, fmt.Errorf("failed to unmarshal document. error: %s", err)
+	}
+
+	delete(updateObj, "_id")
+
+	update := bson.M{
+		"$set": updateObj,
+	}
+
+	result, err := r.db.UpdateOne(nCtx, filter, update)
+
+	if err != nil {
+		return model.Task{}, fmt.Errorf("failed to execute query. error: %s", err)
+	}
+	if result.MatchedCount == 0 {
+		return model.Task{}, apperrors.ErrDocumentNotFound
+	}
+
+	return input, nil
 }

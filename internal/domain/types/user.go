@@ -30,3 +30,9 @@ type VerificationCodeDTO struct {
 	Email                       string        `json:"email"`
 	VerificationCodeExpiresTime time.Duration `json:"verificationCodeExpiresTime"`
 }
+
+type ForgotPasswordPayloadDTO struct {
+	Email       string `json:"email"`
+	Token       string `json:"token"`
+	ResultToken string `json:"resultToken"`
+}

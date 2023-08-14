@@ -161,6 +161,15 @@ func (r *UserRepository) ChangePassword(ctx context.Context, userID, newPassword
 	return nil
 }
 
+func (r *UserRepository) SetForgotPassword(ctx context.Context, email string, input model.ForgotPasswordPayload) error {
+	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	_, err := r.db.UpdateOne(nCtx, bson.M{"email": email}, bson.M{"$set": bson.M{"forgotPasswordToken": input}})
+
+	return err
+}
+
 func (r *UserRepository) GetUserByVerificationCode(ctx context.Context, hash string) (model.User, error) {
 	var user model.User
 	filter := bson.M{"verification.verificationCode": hash}
@@ -200,6 +209,7 @@ func (r *UserRepository) GetByRefreshToken(ctx context.Context, refreshToken str
 
 	return user, nil
 }
+
 func (r *UserRepository) IsDuplicate(ctx context.Context, email string) (bool, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -214,4 +224,39 @@ func (r *UserRepository) IsDuplicate(ctx context.Context, email string) (bool, e
 	}
 	return true, nil
 
+}
+
+func (r *UserRepository) GetByForgotPasswordToken(ctx context.Context, token, tokenResult string) (model.User, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var user model.User
+
+	filter := bson.M{"forgotPasswordToken.token": token, "forgotPasswordToken.resultToken": tokenResult, "forgotPasswordToken.tokenExpiresTime": bson.M{"$gt": time.Now()}}
+
+	res := r.db.FindOne(nCtx, filter)
+
+	if err := res.Decode(&user); err != nil {
+
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return model.User{}, apperrors.ErrUserNotFound
+		}
+		return model.User{}, err
+	}
+
+	return user, nil
+}
+
+func (r *UserRepository) ResetPassword(ctx context.Context, token, email, password string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"forgotPasswordToken.token": token, "email": email}
+
+	res, err := r.db.UpdateOne(nCtx, filter, bson.M{"$set": bson.M{"password": password}, "$unset": bson.M{"forgotPasswordToken": ""}})
+
+	if res.MatchedCount == 0 {
+		return apperrors.ErrUserNotFound
+	}
+	return err
 }

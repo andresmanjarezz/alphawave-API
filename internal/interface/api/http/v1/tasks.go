@@ -23,8 +23,10 @@ func (h *HandlerV1) initTasksRoutes(api *gin.RouterGroup) {
 }
 
 type CreateTaskInput struct {
-	Title string `json:"title"`
-	Order int    `json:"order"`
+	Title    string `json:"title"`
+	Status   string `json:"status"`
+	Priority string `json:"priority"`
+	Order    int    `json:"order"`
 }
 
 func (h *HandlerV1) createTask(c *gin.Context) {

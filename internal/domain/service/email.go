@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/config"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/email"
@@ -25,6 +26,12 @@ type VerificationEmailInput struct {
 	URL   string
 }
 
+type ForgotPasswordInput struct {
+	Email            string
+	TokenExpiresTime time.Duration
+	URL              string
+}
+
 func (e *EmailService) SendUserVerificationEmail(input VerificationEmailInput) error {
 	subject := fmt.Sprintf(e.config.Subjects.Verification, input.Name)
 	sendInput := email.SendEmailInput{To: input.Email, Subject: subject}
@@ -35,6 +42,21 @@ func (e *EmailService) SendUserVerificationEmail(input VerificationEmailInput) e
 	if err != nil {
 		return err
 	}
+	err = e.sender.Send(sendInput)
+	return err
+}
+
+func (e *EmailService) SendUserForgotPassword(input ForgotPasswordInput) error {
+	subject := fmt.Sprintf(e.config.Subjects.ForgotPassword)
+	sendInput := email.SendEmailInput{To: input.Email, Subject: subject}
+
+	templateInput := ForgotPasswordInput{Email: input.Email, TokenExpiresTime: input.TokenExpiresTime, URL: input.URL}
+
+	err := sendInput.GenerateBodyFromHTML(e.config.Templates.ForgotPassword, templateInput)
+	if err != nil {
+		return err
+	}
+
 	err = e.sender.Send(sendInput)
 	return err
 }

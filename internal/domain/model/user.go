@@ -20,3 +20,9 @@ type UserVerificationPayload struct {
 	VerificationCodeExpiresTime time.Time `json:"verificationCodeExpiresTime" bson:"verificationCodeExpiresTime"`
 	Verified                    bool      `json:"verified" bson:"verified"`
 }
+
+type ForgotPasswordPayload struct {
+	Token            string    `json:"token" bson:"token"`
+	ResultToken      string    `json:"resultToken" bson:"resultToken"`
+	TokenExpiresTime time.Time `json:"tokenExpiresTime" bson:"tokenExpiresTime"`
+}

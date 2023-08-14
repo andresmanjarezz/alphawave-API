@@ -18,6 +18,9 @@ type UserServiceI interface {
 	SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error)
 	GetUserById(ctx context.Context, userID string) (types.UserDTO, error)
 	ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error
+	ResetPassword(ctx context.Context, email, token, tokenResult, password string) error
+	VerifyForgotPasswordToken(ctx context.Context, email, token, tokenResult string) (types.ForgotPasswordPayloadDTO, error)
+	ForgotPassword(ctx context.Context, email string) error
 	ResendVerificationCode(ctx context.Context, email string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error)
 	Verify(ctx context.Context, verificationCode string) error
@@ -27,6 +30,7 @@ type TasksServiceI interface {
 	Create(ctx context.Context, userID string, input types.TasksCreateDTO) error
 	GetById(ctx context.Context, userID, taskID string) (types.TaskDTO, error)
 	GetAll(ctx context.Context, userID string) ([]types.TaskDTO, error)
+	UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error)
 }
 
 type Service struct {

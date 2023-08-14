@@ -18,5 +18,8 @@ smtp:
 email:
   templates:
     verification: "./templates/verification_email.html"
+    forgotPassword: "./templates/forgot_password.html"
   subjects:
     verification: "Thanks, for registration %s!"
+    forgotPassword: "Password recovery request"
+
