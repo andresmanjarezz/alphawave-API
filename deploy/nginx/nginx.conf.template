@@ -41,7 +41,7 @@ http {
       }
 
       location /mattermost/ {
-          proxy_pass http://localhost:8065;
+          proxy_pass http://mattermost-preview:8065;
       }
 
     }
