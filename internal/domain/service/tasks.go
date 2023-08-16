@@ -20,6 +20,12 @@ func NewTasksService(repository repository.TasksRepository) *TasksService {
 	}
 }
 
+const (
+	statusDelete string = "del"
+	statusDone   string = "done"
+	statusActive string = "active"
+)
+
 func (s *TasksService) Create(ctx context.Context, userID string, input types.TasksCreateDTO) error {
 
 	task := model.Task{
@@ -80,11 +86,23 @@ func (s *TasksService) GetAll(ctx context.Context, userID string) ([]types.TaskD
 }
 
 func (s *TasksService) UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error) {
+	var status string
+	switch input.Status {
+	case statusActive:
+		status = statusActive
+	case statusDelete:
+		status = statusDelete
+	case statusDone:
+		status = statusDone
+	default:
+		return types.TaskDTO{}, errors.New("incorrect status")
+	}
+
 	task, err := s.repository.UpdateById(ctx, userID, model.Task{
 		ID:       input.ID,
 		Title:    input.Title,
 		Priority: input.Priority,
-		Status:   input.Status,
+		Status:   status,
 		Order:    input.Order,
 	})
 
@@ -98,7 +116,7 @@ func (s *TasksService) UpdateById(ctx context.Context, userID string, input type
 		ID:       task.ID,
 		Title:    task.Title,
 		Priority: task.Priority,
-		Status:   task.Status,
+		Status:   status,
 		Order:    task.Order,
 	}, err
 }
