@@ -31,6 +31,7 @@ type TasksServiceI interface {
 	GetById(ctx context.Context, userID, taskID string) (types.TaskDTO, error)
 	GetAll(ctx context.Context, userID string) ([]types.TaskDTO, error)
 	UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error)
+	ChangeStatus(ctx context.Context, userID, taskID, status string) error
 }
 
 type Service struct {

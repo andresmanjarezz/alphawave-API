@@ -18,6 +18,8 @@ func (h *HandlerV1) initTasksRoutes(api *gin.RouterGroup) {
 			authenticated.POST("/create", h.createTask)
 			authenticated.GET("/:id", h.getByIdTask)
 			authenticated.GET("/", h.getAllTasks)
+			authenticated.POST("/change-status", h.changeStatus)
+			authenticated.POST("/update", h.updateByIdTask)
 		}
 	}
 }
@@ -27,6 +29,19 @@ type CreateTaskInput struct {
 	Status   string `json:"status"`
 	Priority string `json:"priority"`
 	Order    int    `json:"order"`
+}
+
+type UpdateTaskInput struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Status   string `json:"status"`
+	Priority string `json:"priority"`
+	Order    int    `json:"order"`
+}
+
+type ChangeStatusInput struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }
 
 func (h *HandlerV1) createTask(c *gin.Context) {
@@ -99,4 +114,63 @@ func (h *HandlerV1) getAllTasks(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, tasks)
+}
+
+func (h *HandlerV1) updateByIdTask(c *gin.Context) {
+	var input UpdateTaskInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	res, err := h.service.TasksService.UpdateById(c.Request.Context(), userID, types.UpdateTaskDTO{
+		ID:       input.ID,
+		Title:    input.Title,
+		Status:   input.Status,
+		Priority: input.Priority,
+		Order:    input.Order,
+	})
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	c.JSON(http.StatusFound, res)
+}
+
+func (h *HandlerV1) changeStatus(c *gin.Context) {
+	var input ChangeStatusInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	if err := h.service.TasksService.ChangeStatus(c.Request.Context(), userID, input.ID, input.Status); err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.Status(http.StatusOK)
 }

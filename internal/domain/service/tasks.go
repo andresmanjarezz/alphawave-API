@@ -120,3 +120,26 @@ func (s *TasksService) UpdateById(ctx context.Context, userID string, input type
 		Order:    task.Order,
 	}, err
 }
+
+func (s *TasksService) ChangeStatus(ctx context.Context, userID, taskID, status string) error {
+	var stats string
+	switch status {
+	case statusActive:
+		stats = statusActive
+	case statusDelete:
+		stats = statusDelete
+	case statusDone:
+		stats = statusDone
+	default:
+		return errors.New("incorrect status")
+	}
+
+	err := s.repository.ChangeStatus(ctx, userID, taskID, stats)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return apperrors.ErrDocumentNotFound
+		}
+		return err
+	}
+	return nil
+}

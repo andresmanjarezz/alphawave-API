@@ -133,3 +133,19 @@ func (r *TasksRepository) UpdateById(ctx context.Context, userID string, input m
 
 	return input, nil
 }
+
+func (r *TasksRepository) ChangeStatus(ctx context.Context, userID, taskID, status string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	ObjectID, err := primitive.ObjectIDFromHex(taskID)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": ObjectID, "userID": userID}
+
+	_, err = r.db.UpdateOne(nCtx, filter, bson.M{"$set": bson.M{"status": status}})
+
+	return err
+}

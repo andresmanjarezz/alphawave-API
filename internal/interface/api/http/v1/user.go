@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
@@ -71,10 +70,10 @@ type tokenResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-type verifyResponse struct {
-	Email                       string        `json:"email"`
-	VerificationCodeExpiresTime time.Duration `json:"verificationCodeExpiresTime"`
-}
+// type verifyResponse struct {
+// 	Email                       string        `json:"email"`
+// 	VerificationCodeExpiresTime time.Duration `json:"verificationCodeExpiresTime"`
+// }
 
 type EmailInput struct {
 	Email string `json:"email"`
