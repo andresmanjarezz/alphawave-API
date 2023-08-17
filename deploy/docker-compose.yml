@@ -21,6 +21,7 @@ services:
       - PASSWORD_SALT=${PASSWORD_SALT}
       - JWT_SIGNING_KEY=${JWT_SIGNING_KEY}
       - HTTP_HOST=${HTTP_HOST}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
     networks:
       - my_network
   nginx:

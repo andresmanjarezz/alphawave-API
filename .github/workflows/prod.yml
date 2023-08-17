@@ -79,7 +79,7 @@ jobs:
             export PASSWORD_SALT=${{ secrets.PASSWORD_SALT }}
             export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             export JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}
-
+            export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             export REGISTRY=$(echo $REGISTRY)
             export NGINX_IMAGE=$(echo $NGINX_IMAGE)
             export API_IMAGE=$(echo $API_IMAGE)
@@ -93,6 +93,7 @@ jobs:
             docker-compose rm -f
             docker-compose pull
             docker-compose up -d --force-recreate nginx
+
 
 
 
