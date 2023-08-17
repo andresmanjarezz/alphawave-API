@@ -42,8 +42,10 @@ func (h *HandlerV1) createTask(c *gin.Context) {
 	}
 
 	err = h.service.TasksService.Create(c.Request.Context(), userID, types.TasksCreateDTO{
-		Title: input.Title,
-		Order: input.Order,
+		Title:    input.Title,
+		Status:   input.Status,
+		Priority: input.Priority,
+		Order:    input.Order,
 	})
 
 	if err != nil {
