@@ -26,23 +26,41 @@ type UserServiceI interface {
 	Verify(ctx context.Context, verificationCode string) error
 }
 
+type MemberServiceI interface {
+	GetMembers(ctx context.Context, teamID string, query types.GetUsersByQuery) ([]types.MemberDTO, error)
+}
+
+type TeamsServiceI interface {
+	Create(ctx context.Context, userEmail string, input types.CreateTeamsDTO) error
+}
+
 type TasksServiceI interface {
 	Create(ctx context.Context, userID string, input types.TasksCreateDTO) error
 	GetById(ctx context.Context, userID, taskID string) (types.TaskDTO, error)
 	GetAll(ctx context.Context, userID string) ([]types.TaskDTO, error)
 	UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error)
 	ChangeStatus(ctx context.Context, userID, taskID, status string) error
+	DeleteAll(ctx context.Context, userID string, status string) error
+}
+
+type ProjectsServiceI interface {
 }
 
 type Service struct {
-	UserService  UserServiceI
-	TasksService TasksServiceI
+	UserService     UserServiceI
+	MemberService   MemberServiceI
+	TasksService    TasksServiceI
+	ProjectsService ProjectsServiceI
+	TeamsService    TeamsServiceI
 }
 
 type Deps struct {
 	Hasher                 *hash.Hasher
 	UserRepository         repository.UserRepository
+	MemberRepository       repository.MemberRepository
 	TasksRepository        repository.TasksRepository
+	ProjectsRepository     repository.ProjectsRepository
+	TeamsRepository        repository.TeamsRepository
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
 	RefreshTokenTTL        time.Duration
@@ -57,7 +75,10 @@ type Deps struct {
 func NewService(deps *Deps) *Service {
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	return &Service{
-		UserService:  NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl),
-		TasksService: NewTasksService(deps.TasksRepository),
+		UserService:     NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl),
+		MemberService:   NewMemberService(deps.MemberRepository, deps.UserRepository),
+		TeamsService:    NewTeamsService(deps.TeamsRepository, deps.UserRepository),
+		TasksService:    NewTasksService(deps.TasksRepository),
+		ProjectsService: NewProjectsService(deps.ProjectsRepository),
 	}
 }

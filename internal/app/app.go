@@ -59,6 +59,8 @@ func Run() {
 	service := service.NewService(&service.Deps{
 		UserRepository:         repository.User,
 		TasksRepository:        repository.Tasks,
+		ProjectsRepository:     repository.Projects,
+		TeamsRepository:        repository.Teams,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
 		AccessTokenTTL:         cfg.Auth.JWT.AccessTokenTTL,

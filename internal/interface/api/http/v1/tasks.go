@@ -20,6 +20,7 @@ func (h *HandlerV1) initTasksRoutes(api *gin.RouterGroup) {
 			authenticated.GET("/", h.getAllTasks)
 			authenticated.POST("/change-status", h.changeStatus)
 			authenticated.POST("/update", h.updateByIdTask)
+			authenticated.DELETE("/:status", h.deleteAll)
 		}
 	}
 }
@@ -172,5 +173,30 @@ func (h *HandlerV1) changeStatus(c *gin.Context) {
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) deleteAll(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	status := c.Param("status")
+	if status == "" {
+		newResponse(c, http.StatusBadRequest, "status is empty")
+		return
+	}
+
+	err = h.service.TasksService.DeleteAll(c.Request.Context(), userID, status)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
 	c.Status(http.StatusOK)
 }

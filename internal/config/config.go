@@ -57,11 +57,13 @@ type (
 	EmailSubjects struct {
 		Verification   string `mapstructure:"verification"`
 		ForgotPassword string `mapstructure:"forgotPassword"`
+		UserInvite     string `mapstructure:"userInvite"`
 	}
 
 	EmailTemplates struct {
 		Verification   string
 		ForgotPassword string
+		UserInvite     string
 	}
 
 	EmailConfig struct {

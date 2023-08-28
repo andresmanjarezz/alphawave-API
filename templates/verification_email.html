@@ -8,17 +8,22 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f7f7f7;
+      background-color: #D8E4F5;
       margin: 0;
       padding: 0;
+    }
+
+    a {
+      color: #51D7FF;
     }
     
     .container {
       max-width: 600px;
       margin: 0 auto;
       padding: 20px;
+      border-radius: 20px;
       background-color: #ffffff;
-      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      border: 1px solid #ECECEC;
     }
     
     .logo {
@@ -35,41 +40,57 @@
     }
     
     .content h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
+      font-size: 36px;
+      text-align: center;
+      margin-bottom: 30px;
     }
     
     .content p {
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
     
-    .code {
-      padding: 10px;
-      background-color: #f1f1f1;
-      font-family: Consolas, monospace;
+    .verify-link {
+      display: block;
+      padding: 10px 35px;
+      width: min-content;
+      margin: 0 auto;
+      margin-top: 20px;
+      background-color: #003BD1;
+
+      font-family: sans-serif, monospace;
       font-size: 18px;
+      font-weight: 600;
       text-align: center;
+      color: #fff !important;
+      text-decoration: none;
+
+      border-radius: 10px;
+
+      cursor: pointer;
     }
     
     .footer {
+      
       text-align: center;
       font-size: 14px;
+      color: #878585;
+      margin-top: 50px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="logo">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYStswdLLQ5xBM-JvtUFpSxWkahYqaY0RDd6HOehG0eCptQg75_tFS4vELBECo0gAjXBE&usqp=CAU" alt="">
+        <img src="https://alphawave-storage.nyc3.digitaloceanspaces.com/apps_images/icons/logo.png" alt="">
     </div>
     <div class="content">
-      <h1>Email verification</h1>
+      <h1 class="main-title">Verify it's you!</h1>
       <p>Hello, <strong>{{.Name}}</strong>,</p>
-      <p>You have received this email because you have registered on our site. To complete registration, please verify your email address using the following verification code:</p>
-      <a href="http://{{.URL}}" class="code">Verify me</a>
+      <p>You are one step away from signing into <span>Alphawave</span>. To finish the registration process, use the following link:</p>
+      <a href="http://{{.URL}}" class="verify-link">Link</a>
     </div>
     <div class="footer">
-      <p>Regards,<br>AlphaWave</p>
+      <p>The code is valid for one hour but you can request another via the Alphawave website. If you did not request a verification code or you have any question please <a href="/contact-us">contact us.</a></p>
     </div>
   </div>
 </body>

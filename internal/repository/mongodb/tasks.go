@@ -23,7 +23,7 @@ func NewTasksRepository(db *mongo.Database) *TasksRepository {
 	}
 }
 
-func (r *TasksRepository) Create(ctx context.Context, input model.Task) error {
+func (r *TasksRepository) CreateTask(ctx context.Context, input model.Task) error {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -148,4 +148,21 @@ func (r *TasksRepository) ChangeStatus(ctx context.Context, userID, taskID, stat
 	_, err = r.db.UpdateOne(nCtx, filter, bson.M{"$set": bson.M{"status": status}})
 
 	return err
+}
+
+func (r *TasksRepository) DeleteAll(ctx context.Context, userID string, status string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"userID": userID, "status": status}
+	res, err := r.db.DeleteMany(nCtx, filter)
+	if err != nil {
+		return err
+	}
+
+	if res.DeletedCount <= 0 {
+		return apperrors.ErrDocumentNotFound
+	}
+
+	return nil
 }

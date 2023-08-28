@@ -29,5 +29,7 @@ func (h *HandlerV1) InitRoutes(api *gin.RouterGroup) {
 	{
 		h.initUserRoutes(v1)
 		h.initTasksRoutes(v1)
+		h.initTeamsRoutes(v1)
+		h.initMembersRoutes(v1)
 	}
 }

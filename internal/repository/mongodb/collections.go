@@ -1,6 +1,9 @@
 package mongodb
 
 const (
-	usersCollection = "users"
-	tasksCollection = "tasks"
+	usersCollection    = "users"
+	memberCollection   = "member"
+	teamsCollection    = "teams"
+	tasksCollection    = "tasks"
+	projectsCollection = "projects"
 )

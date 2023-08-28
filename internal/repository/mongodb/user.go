@@ -108,6 +108,47 @@ func (r *UserRepository) GetUserById(ctx context.Context, userID string) (model.
 	return user, err
 }
 
+func (r *UserRepository) GetUsersByQuery(ctx context.Context, ids []string, query model.GetUsersByQuery) ([]model.User, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 40*time.Second)
+	defer cancel()
+
+	paginationOpts := getPaginationOptions(&query.PaginationQuery)
+
+	var users = make([]model.User, len(ids))
+	var userIds = make([]primitive.ObjectID, len(ids))
+
+	for _, id := range ids {
+		ObjectID, err := primitive.ObjectIDFromHex(id)
+
+		if err != nil {
+			return []model.User{}, err
+		}
+		userIds = append(userIds, ObjectID)
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": userIds}}
+
+	cur, err := r.db.Find(nCtx, filter, paginationOpts)
+	defer cur.Close(nCtx)
+	if err != nil {
+		return []model.User{}, err
+	}
+
+	err = cur.Err()
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return []model.User{}, apperrors.ErrDocumentNotFound
+		}
+		return []model.User{}, err
+	}
+
+	if err := cur.Decode(users); err != nil {
+		return []model.User{}, err
+	}
+	return users, nil
+}
+
 func (r *UserRepository) ChangeVerificationCode(ctx context.Context, email string, input model.UserVerificationPayload) error {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

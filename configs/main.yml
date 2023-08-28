@@ -19,7 +19,9 @@ email:
   templates:
     verification: "./templates/verification_email.html"
     forgotPassword: "./templates/forgot_password.html"
+    userInvite: "./templates/user_invite.html"
   subjects:
     verification: "Thanks, for registration %s!"
     forgotPassword: "Password recovery request"
+    userInvite: "You've been invited to join the team %s!"
 

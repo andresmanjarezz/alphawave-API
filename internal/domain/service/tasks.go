@@ -21,21 +21,25 @@ func NewTasksService(repository repository.TasksRepository) *TasksService {
 }
 
 const (
-	statusDelete string = "del"
-	statusDone   string = "done"
-	statusActive string = "active"
+	STATUS_DELITE string = "del"
+	STATUS_DONE   string = "done"
+	STATUS_ACTIVE string = "active"
 )
 
 func (s *TasksService) Create(ctx context.Context, userID string, input types.TasksCreateDTO) error {
+	stats, err := checkStatus(input.Status)
+	if err != nil {
+		return err
+	}
 
 	task := model.Task{
 		UserID:   userID,
 		Title:    input.Title,
-		Status:   input.Status,
+		Status:   stats,
 		Priority: input.Priority,
 		Order:    input.Order,
 	}
-	err := s.repository.Create(ctx, task)
+	err = s.repository.CreateTask(ctx, task)
 	if err != nil {
 		return err
 	}
@@ -86,23 +90,16 @@ func (s *TasksService) GetAll(ctx context.Context, userID string) ([]types.TaskD
 }
 
 func (s *TasksService) UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error) {
-	var status string
-	switch input.Status {
-	case statusActive:
-		status = statusActive
-	case statusDelete:
-		status = statusDelete
-	case statusDone:
-		status = statusDone
-	default:
-		return types.TaskDTO{}, errors.New("incorrect status")
+	stats, err := checkStatus(input.Status)
+	if err != nil {
+		return types.TaskDTO{}, err
 	}
 
 	task, err := s.repository.UpdateById(ctx, userID, model.Task{
 		ID:       input.ID,
 		Title:    input.Title,
 		Priority: input.Priority,
-		Status:   status,
+		Status:   stats,
 		Order:    input.Order,
 	})
 
@@ -116,25 +113,18 @@ func (s *TasksService) UpdateById(ctx context.Context, userID string, input type
 		ID:       task.ID,
 		Title:    task.Title,
 		Priority: task.Priority,
-		Status:   status,
+		Status:   stats,
 		Order:    task.Order,
 	}, err
 }
 
 func (s *TasksService) ChangeStatus(ctx context.Context, userID, taskID, status string) error {
-	var stats string
-	switch status {
-	case statusActive:
-		stats = statusActive
-	case statusDelete:
-		stats = statusDelete
-	case statusDone:
-		stats = statusDone
-	default:
-		return errors.New("incorrect status")
+	stats, err := checkStatus(status)
+	if err != nil {
+		return err
 	}
 
-	err := s.repository.ChangeStatus(ctx, userID, taskID, stats)
+	err = s.repository.ChangeStatus(ctx, userID, taskID, stats)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			return apperrors.ErrDocumentNotFound
@@ -142,4 +132,34 @@ func (s *TasksService) ChangeStatus(ctx context.Context, userID, taskID, status 
 		return err
 	}
 	return nil
+}
+
+func (s *TasksService) DeleteAll(ctx context.Context, userID string, status string) error {
+	stats, err := checkStatus(status)
+	if err != nil {
+		return err
+	}
+	err = s.repository.DeleteAll(ctx, userID, stats)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return apperrors.ErrDocumentNotFound
+		}
+		return err
+	}
+	return nil
+}
+
+func checkStatus(input string) (string, error) {
+	var status string
+	switch input {
+	case STATUS_ACTIVE:
+		status = STATUS_ACTIVE
+	case STATUS_DELITE:
+		status = STATUS_DELITE
+	case STATUS_DONE:
+		status = STATUS_DONE
+	default:
+		return status, errors.New("incorrect status")
+	}
+	return status, nil
 }

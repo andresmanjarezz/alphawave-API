@@ -1,4 +1,4 @@
-package model
+package types
 
 type PaginationQuery struct {
 	Skip  int64
