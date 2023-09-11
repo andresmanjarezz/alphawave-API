@@ -10,6 +10,13 @@ auth:
   verificationCodeTTL: 30s
   verificationCodeLength: 10
 
+
+limiter:
+  rps: 20
+  burst: 20
+  ttl: 10m
+
+
 smtp:
   host: "smtp.gmail.com"
   port: 587

@@ -111,7 +111,7 @@ func (h *HandlerV1) getAllTasks(c *gin.Context) {
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
-		fmt.Println(err)
+
 		return
 	}
 	c.JSON(http.StatusOK, tasks)

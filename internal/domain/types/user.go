@@ -36,3 +36,18 @@ type ForgotPasswordPayloadDTO struct {
 	Token       string `json:"token"`
 	ResultToken string `json:"resultToken"`
 }
+
+type UpdateUserInfoDTO struct {
+	FirstName *string
+	LastName  *string
+	JobTitle  *string
+	Email     *string
+}
+
+type UpdateUserSettingsDTO struct {
+	UserIconURL    *string
+	BannerImageURL *string
+	TimeZone       *string
+	DateFormat     *string
+	TimeFormat     *string
+}

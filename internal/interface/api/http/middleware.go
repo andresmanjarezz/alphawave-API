@@ -1,8 +1,12 @@
 package http
 
 import (
+	"net"
 	"net/http"
+	"time"
 
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/limiter"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,5 +38,29 @@ func corsMiddleware(c *gin.Context) {
 		c.Next()
 	} else {
 		c.AbortWithStatus(http.StatusOK)
+	}
+}
+
+func Limit(rps int, burst int, ttl time.Duration) gin.HandlerFunc {
+	l := limiter.NewRateLimiter(rps, burst, ttl)
+
+	go l.CleanupVisitors()
+
+	return func(c *gin.Context) {
+		ip, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+
+		if err != nil {
+			logger.Error(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+
+			return
+		}
+
+		if !l.GetVisitor(ip).Allow() {
+			c.AbortWithStatus(http.StatusTooManyRequests)
+
+			return
+		}
+		c.Next()
 	}
 }

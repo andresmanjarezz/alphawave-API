@@ -9,6 +9,7 @@ var (
 	ErrUserAlreadyVerifyed       = errors.New("user with such email aready verifyed")
 	ErrUserNotVerifyed           = errors.New("user with such email not verifyed")
 	ErrUserNotFound              = errors.New("user doesn't exists")
+	ErrMemberNotFound            = errors.New("member doesn't exists")
 	ErrVerificationCodeExpired   = errors.New("the code has expired")
 	ErrInternalServerError       = errors.New("thre was an internal server bug, please try again later")
 	ErrIncorrectEmailFormat      = errors.New("incorrect email format")

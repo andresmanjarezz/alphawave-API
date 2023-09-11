@@ -122,11 +122,11 @@ func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (ty
 }
 
 func (s *UserService) LogOut(ctx context.Context, userID string) {
-
+	// todo
 }
 
 func (s *UserService) EnableTwoFactorAuth(ctx context.Context, userID string) error {
-
+	// todo
 	return nil
 }
 
@@ -154,25 +154,32 @@ func (s *UserService) GetUserById(ctx context.Context, userID string) (types.Use
 	return user, nil
 }
 
-func (s *UserService) Verify(ctx context.Context, verificationCode string) error {
+func (s *UserService) Verify(ctx context.Context, verificationCode string) (types.Tokens, error) {
 	user, err := s.repository.GetUserByVerificationCode(ctx, verificationCode)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			return err
+			return types.Tokens{}, err
 		}
-		return err
+		return types.Tokens{}, err
 	}
 	if user.Verification.Verified == true {
-		return apperrors.ErrUserAlreadyVerifyed
+		return types.Tokens{}, apperrors.ErrUserAlreadyVerifyed
 	}
 	if user.Verification.VerificationCode != verificationCode {
-		return apperrors.ErrIncorrectVerificationCode
+		return types.Tokens{}, apperrors.ErrIncorrectVerificationCode
 	}
 	if user.Verification.VerificationCodeExpiresTime.UTC().Unix() < time.Now().UTC().Unix() {
-		return apperrors.ErrVerificationCodeExpired
+		return types.Tokens{}, apperrors.ErrVerificationCodeExpired
 	}
 
-	return s.repository.Verify(ctx, verificationCode)
+	id, err := s.repository.Verify(ctx, verificationCode)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return types.Tokens{}, apperrors.ErrUserNotFound
+		}
+		return types.Tokens{}, err
+	}
+	return s.createSession(ctx, id)
 }
 
 func (s *UserService) ResendVerificationCode(ctx context.Context, email string) error {
@@ -360,6 +367,37 @@ func (s *UserService) ResetPassword(ctx context.Context, email, token, tokenResu
 
 	err = s.repository.ResetPassword(ctx, token, user.Email, passwordHash)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UserService) UpdateUserInfo(ctx context.Context, userID string, input types.UpdateUserInfoDTO) error {
+	if err := s.repository.UpdateUserInfo(ctx, userID, model.UpdateUserInfoInput{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		JobTitle:  input.JobTitle,
+		Email:     input.Email,
+	}); err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return apperrors.ErrUserNotFound
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *UserService) UpdateUserSettings(ctx context.Context, userID string, input types.UpdateUserSettingsDTO) error {
+	if err := s.repository.UpdateUserSettings(ctx, userID, model.UpdateUserSettingsInput{
+		UserIconURL:    input.UserIconURL,
+		BannerImageURL: input.BannerImageURL,
+		TimeZone:       input.TimeZone,
+		DateFormat:     input.DateFormat,
+		TimeFormat:     input.TimeFormat,
+	}); err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return apperrors.ErrUserNotFound
+		}
 		return err
 	}
 	return nil

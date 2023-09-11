@@ -61,6 +61,8 @@ func Run() {
 		TasksRepository:        repository.Tasks,
 		ProjectsRepository:     repository.Projects,
 		TeamsRepository:        repository.Teams,
+		RolesRepository:        repository.Roles,
+		MemberRepository:       repository.Members,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
 		AccessTokenTTL:         cfg.Auth.JWT.AccessTokenTTL,
@@ -74,7 +76,7 @@ func Run() {
 	})
 	handler := httpRoutes.NewHandler(service, JWTManager, cfg.Auth.JWT.RefreshTokenTTL, cfg.FrontEndUrl)
 
-	srv := NewServer(cfg, handler.InitRoutes())
+	srv := NewServer(cfg, handler.InitRoutes(cfg))
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
 			panic(err)

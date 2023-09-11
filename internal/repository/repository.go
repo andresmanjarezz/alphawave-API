@@ -9,15 +9,19 @@ import (
 type Repository struct {
 	User     repository.UserRepository
 	Tasks    repository.TasksRepository
+	Roles    repository.RolesRepository
 	Projects repository.ProjectsRepository
 	Teams    repository.TeamsRepository
+	Members  repository.MemberRepository
 }
 
 func NewRepository(db *mongo.Database) *Repository {
 	return &Repository{
 		User:     mongodb.NewUserRepository(db),
 		Tasks:    mongodb.NewTasksRepository(db),
+		Roles:    mongodb.NewRolesRepository(db),
 		Projects: mongodb.NewProjectsRepository(db),
 		Teams:    mongodb.NewTeamsRepository(db),
+		Members:  mongodb.NewMemberRepository(db),
 	}
 }

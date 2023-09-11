@@ -22,3 +22,7 @@ func (p *PaginationQuery) GetSkip() *int64 {
 type GetUsersByQuery struct {
 	PaginationQuery
 }
+
+type GetMembersByQuery struct {
+	PaginationQuery
+}

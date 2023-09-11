@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/repository"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
 )
 
 const (
@@ -19,30 +21,89 @@ const (
 type MemberService struct {
 	repository     repository.MemberRepository
 	userRepository repository.UserRepository
+	userService    UserServiceI
+	teamsService   TeamsServiceI
+	emailService   *EmailService
+	codeGenerator  *codegenerator.CodeGenerator
+	apiUrl         string
 }
 
-func NewMemberService(repository repository.MemberRepository, userRepository repository.UserRepository) *MemberService {
+func NewMemberService(repository repository.MemberRepository, userRepository repository.UserRepository, codeGenerator *codegenerator.CodeGenerator, teamsService TeamsServiceI, emailService *EmailService, userService UserServiceI, apiUrl string) *MemberService {
 	return &MemberService{
 		repository:     repository,
 		userRepository: userRepository,
+		userService:    userService,
+		codeGenerator:  codeGenerator,
+		teamsService:   teamsService,
+		emailService:   emailService,
+		apiUrl:         apiUrl,
 	}
 }
 
-func (s *MemberService) GetMembers(ctx context.Context, teamID string, query types.GetUsersByQuery) ([]types.MemberDTO, error) {
-	members, err := s.repository.GetMembers(ctx, teamID)
+func (s *MemberService) MemberSignUp(ctx context.Context, token string, input types.MemberSignUpDTO) error {
+	member, err := s.repository.GetMemberByToken(ctx, token)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			return apperrors.ErrMemberNotFound
+		}
+		return err
+	}
+
+	err = s.userService.SignUp(ctx, types.UserSignUpDTO{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		JobTitle:  input.JobTitle,
+		Email:     member.Email,
+		Password:  input.Password,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if err := s.SetStatus(ctx, member.ID, STATUS_ACTIVE); err != nil {
+		return err
+	}
+
+	user, err := s.userRepository.GetUserByEmail(ctx, member.Email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return apperrors.ErrUserNotFound
+		}
+		return err
+	}
+
+	if err := s.SetUserID(ctx, member.ID, user.ID); err != nil {
+		return err
+	}
+
+	if err := s.repository.DeleteToken(ctx, member.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *MemberService) GetMembersByQuery(ctx context.Context, teamID string, query types.GetMembersByQuery) ([]types.MemberDTO, error) {
+	members, err := s.repository.GetMembersByQuery(ctx, teamID, model.GetMembersByQuery{PaginationQuery: model.PaginationQuery(query.PaginationQuery)})
+
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			return []types.MemberDTO{}, apperrors.ErrDocumentNotFound
 		}
 		return []types.MemberDTO{}, err
 	}
-	var userIds = make([]string, len(members))
+	var userIds = []string{}
 
 	for _, member := range members {
+		if member.Status == USER_STATUS_PENDING {
+			continue
+		}
 		userIds = append(userIds, member.UserID)
 	}
 
-	users, err := s.userRepository.GetUsersByQuery(ctx, userIds, model.GetUsersByQuery{PaginationQuery: model.PaginationQuery(query.PaginationQuery)})
+	users, err := s.userRepository.GetUsersByIds(ctx, userIds)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			return []types.MemberDTO{}, apperrors.ErrDocumentNotFound
@@ -50,36 +111,149 @@ func (s *MemberService) GetMembers(ctx context.Context, teamID string, query typ
 		return []types.MemberDTO{}, err
 	}
 
-	var membersOutput = make([]types.MemberDTO, len(members))
+	var membersOutput = []types.MemberDTO{}
 
 	for i := range members {
-		membersOutput = append(membersOutput, types.MemberDTO{
-			MemberID:      users[i].ID,
-			FirstName:     users[i].FirstName,
-			LastName:      users[i].LastName,
-			Email:         users[i].Email,
-			LastVisitTime: users[i].LastVisitTime,
-			Roles:         members[i].Roles,
-		})
+		if len(userIds) > 0 && users[i].ID == members[i].UserID {
+			membersOutput = append(membersOutput, types.MemberDTO{
+				MemberID:  members[i].ID,
+				FirstName: users[i].FirstName,
+				LastName:  users[i].LastName,
+				Email:     users[i].Email,
+				Roles:     members[i].Roles,
+			})
+		} else {
+			membersOutput = append(membersOutput, types.MemberDTO{
+				MemberID:  members[i].ID,
+				FirstName: "",
+				LastName:  "",
+				Email:     members[i].Email,
+				Roles:     members[i].Roles,
+			})
+
+		}
+
 	}
+
 	return membersOutput, nil
 }
 
-// func (s *MemberService) UserInvite(ctx context.Context, teamID string, email string, role string) error {
+func (s *MemberService) GetMemberByTeamIdAndUserId(ctx context.Context, teamID string, userID string) (model.Member, error) {
+	member, err := s.repository.GetMemberByTeamIdAndUserId(ctx, teamID, userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			return model.Member{}, apperrors.ErrMemberNotFound
+		}
+		return model.Member{}, err
+	}
+	return member, nil
+}
 
-// 	user, err := s.userRepository.GetUserByEmail(ctx, email)
-// 	if err != nil {
-// 		if errors.Is(err, apperrors.ErrUserNotFound) {
+func (s *MemberService) UserInvite(ctx context.Context, teamID string, email string, role string) error {
 
-// 		}
-// 		return err
-// 	}
+	isDuplicate, err := s.repository.MemberIsDuplicate(ctx, email)
+	if err != nil {
+		return err
+	}
 
-// 	err := s.repository.CreateMember(ctx, teamID)
-// 	if err != nil {
-// 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
-// 			return apperrors.ErrDocumentNotFound
-// 		}
-// 		return err
-// 	}
-// }
+	if isDuplicate {
+		return apperrors.ErrUserAlreadyExists
+	}
+
+	token := s.codeGenerator.RandomSecret(20)
+
+	roles := make([]string, 0, 1)
+	if model.IsAvailableRole(role) {
+		roles = append(roles, role)
+	} else {
+		return errors.New("this role not available")
+	}
+
+	team, err := s.teamsService.GetTeamByID(ctx, teamID)
+
+	if err != nil {
+		return err
+	}
+
+	err = s.repository.CreateMember(ctx, teamID, model.Member{
+		TeamID:      teamID,
+		Email:       email,
+		VerifyToken: token,
+		Status:      USER_STATUS_PENDING,
+		Roles:       roles,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return apperrors.ErrDocumentNotFound
+		}
+		return err
+	}
+
+	invationURL := fmt.Sprintf("%s/api/v1/members/accept_invite/%s", s.apiUrl, token)
+
+	err = s.emailService.SendUserInvite(UserInviteInput{
+		Email:    email,
+		TeamName: team.TeamName,
+		URL:      invationURL,
+	})
+
+	return err
+}
+
+func (s *MemberService) AcceptInvite(ctx context.Context, token string) (string, error) {
+	member, err := s.repository.GetMemberByToken(ctx, token)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			return "", apperrors.ErrMemberNotFound
+		}
+		return "", err
+	}
+	user, err := s.userRepository.GetUserByEmail(ctx, member.Email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return member.VerifyToken, apperrors.ErrUserNotFound
+		}
+		return "", err
+	}
+	if err := s.SetStatus(ctx, member.ID, STATUS_ACTIVE); err != nil {
+		return "", err
+	}
+	if err := s.SetUserID(ctx, member.ID, user.ID); err != nil {
+		return "", err
+	}
+
+	if err := s.repository.DeleteToken(ctx, member.ID); err != nil {
+		return "", err
+	}
+
+	return "", nil
+}
+
+func (s *MemberService) SetStatus(ctx context.Context, memberID string, status string) error {
+	err := s.repository.SetStatus(ctx, memberID, status)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			return apperrors.ErrMemberNotFound
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *MemberService) SetUserID(ctx context.Context, memberID string, userID string) error {
+	err := s.repository.SetUserID(ctx, memberID, userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			return apperrors.ErrMemberNotFound
+		}
+		return err
+	}
+	return nil
+}

@@ -23,3 +23,13 @@ type MemberDTO struct {
 	LastVisitTime time.Time `json:"lastVisitTime"`
 	Roles         []string  `json:"roles"`
 }
+
+type UpdateTeamSettingsDTO struct {
+	LogoURL               *string
+	UserActivityIndicator *bool
+	DisplayLinkPreview    *bool
+	DisplayFilePreview    *bool
+	EnableGifs            *bool
+	ShowWeekends          *bool
+	FirstDayOfWeek        *string
+}

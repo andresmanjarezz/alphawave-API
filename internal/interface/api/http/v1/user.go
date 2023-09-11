@@ -26,6 +26,8 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 		{
 			authenticated.GET("/me", h.getUser)
 			authenticated.POST("/change-password", h.changePassword)
+			authenticated.PUT("/", h.updateUserInfo)
+			authenticated.PUT("/settings", h.updateUserSettings)
 		}
 	}
 
@@ -59,6 +61,19 @@ type ResetPasswordInput struct {
 type UserVerifyInput struct {
 	Email            string `json:"email"`
 	VerificationCode string `json:"verificationCode"`
+}
+
+type UpdateUserInfoInput struct {
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+	JobTitle  *string `json:"jobTitle"`
+	Email     *string `json:"email"`
+}
+
+type UpdateUserSettingsInput struct {
+	TimeZone   *string `json:"timeZone"`
+	DateFormat *string `json:"dateFormat"`
+	TimeFormat *string `json:"timeFormat"`
 }
 
 // type refreshTokenInput struct {
@@ -224,7 +239,7 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 		return
 	}
-	err := h.service.UserService.Verify(c.Request.Context(), code)
+	tokens, err := h.service.UserService.Verify(c.Request.Context(), code)
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrIncorrectVerificationCode) {
@@ -243,7 +258,8 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 
 		return
 	}
-	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/verification-done", h.frontEndUrl))
+	c.SetCookie("refresh_token", tokens.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
+	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/create-team?access_token=%s", h.frontEndUrl, tokens.AccessToken))
 	// c.String(http.StatusOK, "success")
 
 }
@@ -349,5 +365,63 @@ func (h *HandlerV1) resetPassword(c *gin.Context) {
 		return
 	}
 
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) updateUserInfo(c *gin.Context) {
+
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	var input UpdateUserInfoInput
+
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+
+	if err := h.service.UserService.UpdateUserInfo(c.Request.Context(), userID, types.UpdateUserInfoDTO{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		JobTitle:  input.JobTitle,
+		Email:     input.Email,
+	}); err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) updateUserSettings(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrDocumentNotFound.Error())
+		return
+	}
+	var input UpdateUserSettingsInput
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+	if err := h.service.UserService.UpdateUserSettings(c.Request.Context(), userID, types.UpdateUserSettingsDTO{
+		TimeZone:   input.TimeZone,
+		DateFormat: input.DateFormat,
+		TimeFormat: input.TimeFormat,
+	}); err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
 	c.Status(http.StatusOK)
 }

@@ -3,7 +3,6 @@ package mongodb
 import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
 )
 
 func getPaginationOptions(pagination *model.PaginationQuery) *options.FindOptions {

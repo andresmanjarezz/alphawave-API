@@ -21,6 +21,7 @@ const (
 type Config struct {
 	FrontEndUrl string
 	HTTP        HTTPConfig
+	Limiter     LimiterConfig
 	SMTP        SMTPConfig
 	MongoDB     MongoConfig
 	Auth        AuthConfig
@@ -35,6 +36,13 @@ type (
 		WriteTimeout   time.Duration `mapstructure:"writeTimeout"`
 		MaxHeaderBytes int           `mapstructure:"maxHeaderBytes"`
 	}
+
+	LimiterConfig struct {
+		RPS   int           `mapstructure:"rps"`
+		BURST int           `mapstructure:"burst"`
+		TTL   time.Duration `mapstructure:"ttl"`
+	}
+
 	MongoConfig struct {
 		Url      string
 		Username string
@@ -100,6 +108,10 @@ func Init(configDir string) (*Config, error) {
 func unmarshal(cfg *Config) error {
 
 	if err := viper.UnmarshalKey("http", &cfg.HTTP); err != nil {
+		return err
+	}
+
+	if err := viper.UnmarshalKey("limiter", &cfg.Limiter); err != nil {
 		return err
 	}
 

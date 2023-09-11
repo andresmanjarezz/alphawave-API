@@ -130,6 +130,50 @@ func (r *UserRepository) GetUsersByQuery(ctx context.Context, ids []string, quer
 
 	cur, err := r.db.Find(nCtx, filter, paginationOpts)
 	defer cur.Close(nCtx)
+
+	if err != nil {
+		return []model.User{}, err
+	}
+
+	err = cur.Err()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return []model.User{}, apperrors.ErrDocumentNotFound
+		}
+		return []model.User{}, err
+	}
+
+	if err := cur.Decode(users); err != nil {
+		return []model.User{}, err
+	}
+	return users, nil
+}
+
+func (r *UserRepository) GetUsersByIds(ctx context.Context, ids []string) ([]model.User, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 40*time.Second)
+	defer cancel()
+
+	if len(ids) <= 0 {
+		return []model.User{}, nil
+	}
+
+	var users = make([]model.User, len(ids))
+	var userIds = make([]primitive.ObjectID, len(ids))
+
+	for _, id := range ids {
+
+		ObjectID, err := primitive.ObjectIDFromHex(id)
+
+		if err != nil {
+			return []model.User{}, err
+		}
+		userIds = append(userIds, ObjectID)
+	}
+	filter := bson.M{"_id": bson.M{"$in": userIds}}
+
+	cur, err := r.db.Find(nCtx, filter)
+	defer cur.Close(nCtx)
+
 	if err != nil {
 		return []model.User{}, err
 	}
@@ -143,7 +187,7 @@ func (r *UserRepository) GetUsersByQuery(ctx context.Context, ids []string, quer
 		return []model.User{}, err
 	}
 
-	if err := cur.Decode(users); err != nil {
+	if err := cur.All(nCtx, &users); err != nil {
 		return []model.User{}, err
 	}
 	return users, nil
@@ -174,12 +218,15 @@ func (r *UserRepository) SetSession(ctx context.Context, userID string, session 
 	return err
 }
 
-func (r *UserRepository) Verify(ctx context.Context, verificationCode string) error {
+func (r *UserRepository) Verify(ctx context.Context, verificationCode string) (string, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	_, err := r.db.UpdateOne(nCtx, bson.M{"verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true, "verification.verificationCode": ""}})
-	return err
+	res, err := r.db.UpdateOne(nCtx, bson.M{"verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true, "verification.verificationCode": ""}})
+
+	ObjectID := res.UpsertedID.(primitive.ObjectID)
+	id := ObjectID.Hex()
+	return id, err
 }
 
 func (r *UserRepository) ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error {
@@ -200,6 +247,47 @@ func (r *UserRepository) ChangePassword(ctx context.Context, userID, newPassword
 	}
 
 	return nil
+}
+
+func (r *UserRepository) UpdateUserInfo(ctx context.Context, userID string, input model.UpdateUserInfoInput) error {
+	updateQuery := bson.M{}
+
+	if input.FirstName != nil {
+		updateQuery["firstName"] = input.FirstName
+	}
+	if input.LastName != nil {
+		updateQuery["lastName"] = input.LastName
+	}
+	if input.JobTitle != nil {
+		updateQuery["jobTitle"] = input.JobTitle
+	}
+	if input.Email != nil {
+		updateQuery["email"] = input.Email
+	}
+	_, err := r.db.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": updateQuery})
+	return err
+}
+
+func (r *UserRepository) UpdateUserSettings(ctx context.Context, userID string, input model.UpdateUserSettingsInput) error {
+	updateQuery := bson.M{}
+
+	if input.UserIconURL != nil {
+		updateQuery["settings.userIconUrl"] = input.UserIconURL
+	}
+	if input.BannerImageURL != nil {
+		updateQuery["settings.bannerImageUrl"] = input.BannerImageURL
+	}
+	if input.TimeZone != nil {
+		updateQuery["settings.timeZone"] = input.TimeFormat
+	}
+	if input.DateFormat != nil {
+		updateQuery["settings.dateFormat"] = input.DateFormat
+	}
+	if input.TimeFormat != nil {
+		updateQuery["settings.timeFormat"] = input.TimeFormat
+	}
+	_, err := r.db.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": updateQuery})
+	return err
 }
 
 func (r *UserRepository) SetForgotPassword(ctx context.Context, email string, input model.ForgotPasswordPayload) error {
