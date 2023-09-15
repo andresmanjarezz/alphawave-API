@@ -36,6 +36,8 @@ services:
     environment:
       - API_HOST=backend-api
       - API_PORT=8000
+      - MATTERMOST_HOST=mattermost-backend
+      - MATTERMOST_PORT=8065
       - SERVER_NAME=${SERVER_NAME}
     depends_on:
       - api
