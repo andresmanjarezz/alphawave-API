@@ -24,7 +24,6 @@ func Info(msg ...interface{}) {
 func Infof(format string, args ...interface{}) {
 	logrus.Infof(format, args...)
 }
-
 func Warn(msg ...interface{}) {
 	logrus.Warn(msg...)
 }

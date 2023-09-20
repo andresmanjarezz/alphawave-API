@@ -26,6 +26,7 @@ type Config struct {
 	MongoDB     MongoConfig
 	Auth        AuthConfig
 	Email       EmailConfig
+	OpenAI      OpenAIConfig
 }
 
 type (
@@ -54,6 +55,11 @@ type (
 		PasswordSalt           string
 		VerificationCodeTTL    time.Duration `mapstructure:"verificationCodeTTL"`
 		VerificationCodeLength int           `mapstructure:"verificationCodeLength"`
+	}
+
+	OpenAIConfig struct {
+		Url   string
+		Token string
 	}
 
 	JWTConfig struct {
@@ -160,6 +166,9 @@ func setFromEnv(cfg *Config) {
 	cfg.Auth.JWT.SigningKey = os.Getenv("JWT_SIGNING_KEY")
 
 	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
+
+	cfg.OpenAI.Url = os.Getenv("OPEN_AI_API_URL")
+	cfg.OpenAI.Token = os.Getenv("OPEN_AI_TOKEN")
 }
 
 func SetDefault() {

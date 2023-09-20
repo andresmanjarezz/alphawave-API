@@ -12,6 +12,7 @@ import (
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/config"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/service"
+	openai "github.com/Coke15/AlphaWave-BackEnd/internal/infrastructure/ai/openAI"
 	httpRoutes "github.com/Coke15/AlphaWave-BackEnd/internal/interface/api/http"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/repository"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/auth/manager"
@@ -52,6 +53,8 @@ func Run() {
 		return
 	}
 	codeGenerator := codegenerator.NewCodeGenerator()
+
+	openAI := openai.NewOpenAiAPI(cfg.OpenAI.Token, cfg.OpenAI.Url)
 	// -----
 
 	mongodb := mongoClient.Database(cfg.MongoDB.DBName)
@@ -73,6 +76,7 @@ func Run() {
 		CodeGenerator:          codeGenerator,
 		VerificationCodeLength: cfg.Auth.VerificationCodeLength,
 		ApiUrl:                 cfg.HTTP.Host,
+		OpenAI:                 openAI,
 	})
 	handler := httpRoutes.NewHandler(service, JWTManager, cfg.Auth.JWT.RefreshTokenTTL, cfg.FrontEndUrl)
 

@@ -59,6 +59,10 @@ type TasksServiceI interface {
 	DeleteAll(ctx context.Context, userID string, status string) error
 }
 
+type AiChatServiceI interface {
+	NewMessage(messages []types.Message) (types.Message, error)
+}
+
 type ProjectsServiceI interface {
 }
 
@@ -69,6 +73,7 @@ type Service struct {
 	RolesService    RolesServiceI
 	ProjectsService ProjectsServiceI
 	TeamsService    TeamsServiceI
+	AiChatService   AiChatServiceI
 }
 
 type Deps struct {
@@ -86,6 +91,7 @@ type Deps struct {
 	Sender                 email.Sender
 	EmailConfig            config.EmailConfig
 	CodeGenerator          *codegenerator.CodeGenerator
+	OpenAI                 openAI
 	VerificationCodeLength int
 	ApiUrl                 string
 }
@@ -96,6 +102,7 @@ func NewService(deps *Deps) *Service {
 	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, *rolesService)
 	userService := NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl)
 	return &Service{
+		AiChatService:   NewAiChatService(deps.OpenAI),
 		UserService:     userService,
 		MemberService:   NewMemberService(deps.MemberRepository, deps.UserRepository, deps.CodeGenerator, teamsService, emailService, userService, deps.ApiUrl),
 		TeamsService:    teamsService,
