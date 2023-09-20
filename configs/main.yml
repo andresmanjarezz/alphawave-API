@@ -7,7 +7,7 @@ http:
 auth:
   accessTokenTTL: 2h
   refreshTokenTTL: 720h
-  verificationCodeTTL: 30s
+  verificationCodeTTL: 1h
   verificationCodeLength: 10
 
 
