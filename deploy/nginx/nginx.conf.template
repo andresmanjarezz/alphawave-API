@@ -23,6 +23,11 @@ http {
     keepalive_timeout  65;
 
     client_max_body_size 0;
+    # Define a map for the combination of $host and $scheme
+    map "$host$scheme" $mattermost_path {
+        ~^mattermost\.alphawavetechnology\.comhttps "/api/v4";
+        default "";
+    }
 
     server {
        listen 80;
