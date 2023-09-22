@@ -23,11 +23,6 @@ http {
     keepalive_timeout  65;
 
     client_max_body_size 0;
-    # Define a map for the combination of $host and $scheme
-    map "$host$scheme" $mattermost_path {
-        ~^mattermost\.alphawavetechnology\.comhttps "/api/v4";
-        default "";
-    }
 
     server {
        listen 80;
@@ -47,20 +42,7 @@ http {
             proxy_pass http://${API_HOST}:${API_PORT};
         }
         if ($host = "mattermost.alphawavetechnology.com") {
-            proxy_pass http://${MATTERMOST_HOST}:${MATTERMOST_PORT}$mattermost_path;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_set_header X-Frame-Options SAMEORIGIN;
-            proxy_buffers 256 16k;
-            proxy_buffer_size 16k;
-            client_max_body_size 50M;
-            proxy_read_timeout 600s;
-            proxy_cache off;
-            proxy_redirect off;
+            proxy_pass http://${MATTERMOST_HOST}:${MATTERMOST_PORT};
         }
      }      
     }
