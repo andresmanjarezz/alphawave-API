@@ -23,6 +23,11 @@ http {
     keepalive_timeout  65;
 
     client_max_body_size 0;
+    # Define a map for the combination of $host and $scheme
+    map "$host$scheme" $mattermost_path {
+        ~^mattermost\.alphawavetechnology\.comhttps "/api/v4";
+        default "";
+    }
 
     server {
        listen 80;
@@ -42,12 +47,6 @@ http {
             proxy_pass http://${API_HOST}:${API_PORT};
         }
         if ($host = "mattermost.alphawavetechnology.com") {
-             set $mattermost_path "";
-
-            if ($scheme = "https") {
-                set $mattermost_path "/api/v4";
-            }
-  
             proxy_pass http://${MATTERMOST_HOST}:${MATTERMOST_PORT}$mattermost_path;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
