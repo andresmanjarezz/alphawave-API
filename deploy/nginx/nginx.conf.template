@@ -61,9 +61,7 @@ http {
             proxy_read_timeout 600s;
             proxy_cache off;
             proxy_redirect off;
-            
         }
      }      
     }
 }
-
