@@ -49,7 +49,7 @@ http {
 
       server_name         mattermost.alphawavetechnology.com;
       location / {
-        proxy_pass http://${MATTERMOST_HOST}:8065/api/v4;
+        proxy_pass http://${MATTERMOST_HOST}:8065/api/v4/;
      }
     }
 }
