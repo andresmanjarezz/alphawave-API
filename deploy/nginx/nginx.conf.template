@@ -41,15 +41,16 @@ http {
      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
      server_name         api.alphawavetechnology.com mattermost.alphawavetechnology.com;
+     set $backend "";
+     if ($host = "api.alphawavetechnology.com") {
+           set $backend "http://${API_HOST}:${API_PORT}";
+      }
+      if ($host = "mattermost.alphawavetechnology.com") {
+            set $backend "http://${MATTERMOST_HOST}:${MATTERMOST_PORT}/api/v4";
+      }
 
      location / {
-        if ($host = "api.alphawavetechnology.com") {
-            proxy_pass http://${API_HOST}:${API_PORT};
-        }
-        if ($host = "mattermost.alphawavetechnology.com") {
-            $mattermost_path = "/api/v4"
-            proxy_pass http://${MATTERMOST_HOST}:${MATTERMOST_PORT}$mattermost_path;
-        }
+        proxy_pass $backend
      }      
     }
 }
