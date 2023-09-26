@@ -61,7 +61,7 @@ http {
             proxy_pass http://${API_HOST}:${API_PORT};
         }
         if ($host = "mattermost.alphawavetechnology.com") {
-            proxy_pass http://${MATTERMOST_HOST}:${MATTERMOST_PORT}$mattermost_path;
+            proxy_pass http://${MATTERMOST_HOST}:${MATTERMOST_PORT}/api/v4;
         }
      }      
     }
