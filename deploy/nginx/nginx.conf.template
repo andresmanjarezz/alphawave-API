@@ -30,22 +30,26 @@ http {
        server_name ${SERVER_NAME};
        return 302 https://$server_name$request_uri;
     }
+
     server {
-     listen              443 ssl;
-     ssl_certificate         /etc/nginx/certs/api.prod.cert.pem;
-     ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
+      listen              443 ssl;
+      ssl_certificate         /etc/nginx/certs/api.prod.cert.pem;
+      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
 
-     server_name         api.alphawavetechnology.com mattermost.alphawavetechnology.com;
-     set $backend "";
-     if ($host = "api.alphawavetechnology.com") {
-           set $backend "http://${API_HOST}:${API_PORT}";
-      }
-      if ($host = "mattermost.alphawavetechnology.com") {
-            set $backend "http://${MATTERMOST_HOST}:${MATTERMOST_PORT}/api/v4";
-      }
+      server_name         api.alphawavetechnology.com;
+      location / {
+        proxy_pass http://${API_HOST}:${API_PORT};
+     }
+    }
 
-     location / {
-        proxy_pass $backend;
-     }      
+    server {
+      listen              443 ssl;
+      ssl_certificate         /etc/nginx/certs/api.prod.cert.pem;
+      ssl_certificate_key     /etc/nginx/certs/api.prod.key.pem;
+
+      server_name         mattermost.alphawavetechnology.com;
+      location / {
+        proxy_pass http://${MATTERMOST_HOST}:8065/api/v4;
+     }
     }
 }
