@@ -14,6 +14,7 @@ type UserRepository interface {
 	GetUserById(ctx context.Context, userID string) (model.User, error)
 	GetUsersByQuery(ctx context.Context, ids []string, query model.GetUsersByQuery) ([]model.User, error)
 	GetUsersByIds(ctx context.Context, ids []string) ([]model.User, error)
+	RemoveSession(ctx context.Context, userID string) error
 	ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error
 	UpdateUserInfo(ctx context.Context, userID string, input model.UpdateUserInfoInput) error
 	UpdateUserSettings(ctx context.Context, userID string, input model.UpdateUserSettingsInput) error

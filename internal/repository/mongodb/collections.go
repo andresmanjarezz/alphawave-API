@@ -7,4 +7,5 @@ const (
 	teamsCollection    = "teams"
 	tasksCollection    = "tasks"
 	projectsCollection = "projects"
+	packagesCollection = "packages"
 )

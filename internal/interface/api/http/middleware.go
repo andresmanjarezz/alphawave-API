@@ -15,6 +15,7 @@ func corsMiddleware(c *gin.Context) {
 		"https://alphawave.gasstrem.com",
 		"http://localhost:3000",
 		"http://localhost:3001",
+		"http://127.0.0.1:5500",
 		"http://localhost",
 		"https://alpahwave-client.onrender.com",
 		"https://oyster-app-4mavy.ondigitalocean.app",

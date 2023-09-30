@@ -339,6 +339,21 @@ func (r *UserRepository) GetByRefreshToken(ctx context.Context, refreshToken str
 	return user, nil
 }
 
+func (r *UserRepository) RemoveSession(ctx context.Context, userID string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	res, err := r.db.UpdateOne(nCtx, bson.M{"id": userID}, bson.M{"$unset": bson.M{"session": ""}})
+
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return apperrors.ErrUserNotFound
+	}
+	return nil
+}
+
 func (r *UserRepository) IsDuplicate(ctx context.Context, email string) (bool, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

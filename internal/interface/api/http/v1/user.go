@@ -28,6 +28,7 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 			authenticated.POST("/change-password", h.changePassword)
 			authenticated.PUT("/", h.updateUserInfo)
 			authenticated.PUT("/settings", h.updateUserSettings)
+			authenticated.POST("/logout", h.logOut)
 		}
 	}
 
@@ -81,8 +82,9 @@ type UpdateUserSettingsInput struct {
 // }
 
 type tokenResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	AccessToken     string `json:"accessToken"`
+	RefreshToken    string `json:"refreshToken"`
+	MattermostToken string `json:"mattermostToken"`
 }
 
 // type verifyResponse struct {
@@ -201,8 +203,9 @@ func (h *HandlerV1) signIn(c *gin.Context) {
 	c.SetCookie("refresh_token", tokens.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
 
 	c.JSON(http.StatusOK, tokenResponse{
-		AccessToken:  tokens.AccessToken,
-		RefreshToken: tokens.RefreshToken,
+		AccessToken:     tokens.AccessToken,
+		RefreshToken:    tokens.RefreshToken,
+		MattermostToken: tokens.MattermostToken,
 	})
 }
 
@@ -227,8 +230,9 @@ func (h *HandlerV1) userRefresh(c *gin.Context) {
 	}
 	c.SetCookie("refresh_token", res.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
 	c.JSON(http.StatusOK, tokenResponse{
-		AccessToken:  res.AccessToken,
-		RefreshToken: res.RefreshToken,
+		AccessToken:     res.AccessToken,
+		RefreshToken:    res.RefreshToken,
+		MattermostToken: res.MattermostToken,
 	})
 }
 
@@ -259,7 +263,7 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 		return
 	}
 	c.SetCookie("refresh_token", tokens.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
-	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/create-team?access_token=%s", h.frontEndUrl, tokens.AccessToken))
+	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/create-team?access_token=%s/mattermost_token=%s", h.frontEndUrl, tokens.AccessToken, tokens.MattermostToken))
 	// c.String(http.StatusOK, "success")
 
 }
@@ -421,6 +425,25 @@ func (h *HandlerV1) updateUserSettings(c *gin.Context) {
 			return
 		}
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) logOut(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrDocumentNotFound.Error())
+		return
+	}
+
+	err = h.service.UserService.LogOut(c.Request.Context(), userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrUserNotFound.Error())
 		return
 	}
 	c.Status(http.StatusOK)

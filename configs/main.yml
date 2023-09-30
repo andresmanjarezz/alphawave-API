@@ -22,6 +22,9 @@ smtp:
   port: 587
   from: "avalonsendler@gmail.com"
 
+mattermost:
+  apiUrl: "https://mattermost.alphawavetechnology.com"
+
 email:
   templates:
     verification: "./templates/verification_email.html"

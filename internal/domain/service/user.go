@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -27,9 +28,10 @@ type UserService struct {
 	ApiUrl                 string
 	codeGenerator          *codegenerator.CodeGenerator
 	emailService           *EmailService
+	mattermostAdapter      MattermostAdapter
 }
 
-func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, JWTManager *manager.JWTManager, accessTokenTTL time.Duration, refreshTokenTTL time.Duration, verificationCodeTTL time.Duration, codeGenerator *codegenerator.CodeGenerator, emailService *EmailService, verificationCodeLength int, apiUrl string) *UserService {
+func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, JWTManager *manager.JWTManager, accessTokenTTL time.Duration, refreshTokenTTL time.Duration, verificationCodeTTL time.Duration, codeGenerator *codegenerator.CodeGenerator, emailService *EmailService, mattermostAdapter MattermostAdapter, verificationCodeLength int, apiUrl string) *UserService {
 	return &UserService{
 		hasher:                 hasher,
 		repository:             repository,
@@ -37,6 +39,7 @@ func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, J
 		AccessTokenTTL:         accessTokenTTL,
 		RefreshTokenTTL:        refreshTokenTTL,
 		emailService:           emailService,
+		mattermostAdapter:      mattermostAdapter,
 		VerificationCodeTTL:    verificationCodeTTL,
 		codeGenerator:          codeGenerator,
 		VerificationCodeLength: verificationCodeLength,
@@ -87,6 +90,17 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) err
 	if err := s.repository.Create(ctx, user); err != nil {
 		return err
 	}
+
+	if err := s.mattermostAdapter.CreateUser(ctx, types.CreateUserMattermostPayloadDTO{
+		Email:     input.Email,
+		Username:  input.Email[:strings.Index(input.Email, "@")],
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Password:  passwordHash,
+	}); err != nil {
+		return err
+	}
+
 	go func() {
 		err = s.emailService.SendUserVerificationEmail(VerificationEmailInput{
 			Name:  input.FirstName,
@@ -121,8 +135,9 @@ func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (ty
 	return s.createSession(ctx, user.ID)
 }
 
-func (s *UserService) LogOut(ctx context.Context, userID string) {
+func (s *UserService) LogOut(ctx context.Context, userID string) error {
 	// todo
+	return s.repository.RemoveSession(ctx, userID)
 }
 
 func (s *UserService) EnableTwoFactorAuth(ctx context.Context, userID string) error {
@@ -255,9 +270,27 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 		RefreshToken: tokens.RefreshToken,
 		ExpiresTime:  time.Now().Add(s.RefreshTokenTTL),
 	}
+	user, err := s.repository.GetUserById(ctx, userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return types.Tokens{}, apperrors.ErrUserNotFound
+		}
+		return types.Tokens{}, err
+	}
+
+	token, err := s.mattermostAdapter.SignIn(user.Email, user.Password)
+
+	if err != nil {
+		return types.Tokens{}, err
+	}
 
 	err = s.repository.SetSession(ctx, userID, session, time.Now())
-	return types.Tokens(tokens), err
+
+	return types.Tokens{
+		AccessToken:     tokens.AccessToken,
+		RefreshToken:    tokens.RefreshToken,
+		MattermostToken: token,
+	}, err
 }
 
 func (s *UserService) ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error {

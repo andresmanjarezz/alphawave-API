@@ -27,6 +27,7 @@ type Config struct {
 	Auth        AuthConfig
 	Email       EmailConfig
 	OpenAI      OpenAIConfig
+	Mattermost  MattermostConfig
 }
 
 type (
@@ -66,6 +67,10 @@ type (
 		AccessTokenTTL  time.Duration `mapstructure:"accessTokenTTL"`
 		RefreshTokenTTL time.Duration `mapstructure:"refreshTokenTTL"`
 		SigningKey      string
+	}
+
+	MattermostConfig struct {
+		ApiUrl string `mapstructure:"apiUrl"`
 	}
 
 	EmailSubjects struct {
@@ -138,6 +143,10 @@ func unmarshal(cfg *Config) error {
 		return err
 	}
 	if err := viper.UnmarshalKey("email.subjects", &cfg.Email.Subjects); err != nil {
+		return err
+	}
+
+	if err := viper.UnmarshalKey("mattermost.apiUrl", &cfg.Mattermost.ApiUrl); err != nil {
 		return err
 	}
 

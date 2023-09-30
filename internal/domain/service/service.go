@@ -14,6 +14,11 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 )
 
+type MattermostAdapter interface {
+	CreateUser(ctx context.Context, input types.CreateUserMattermostPayloadDTO) error
+	SignIn(email string, password string) (string, error)
+}
+
 type UserServiceI interface {
 	SignUp(ctx context.Context, input types.UserSignUpDTO) error
 	SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error)
@@ -24,6 +29,7 @@ type UserServiceI interface {
 	ResetPassword(ctx context.Context, email, token, tokenResult, password string) error
 	VerifyForgotPasswordToken(ctx context.Context, email, token, tokenResult string) (types.ForgotPasswordPayloadDTO, error)
 	ForgotPassword(ctx context.Context, email string) error
+	LogOut(ctx context.Context, userID string) error
 	ResendVerificationCode(ctx context.Context, email string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (types.Tokens, error)
 	Verify(ctx context.Context, verificationCode string) (types.Tokens, error)
@@ -63,6 +69,10 @@ type AiChatServiceI interface {
 	NewMessage(messages []types.Message) (types.Message, error)
 }
 
+type PackagesServiceI interface {
+	CreateDefaultPackages() error
+}
+
 type ProjectsServiceI interface {
 }
 
@@ -74,6 +84,7 @@ type Service struct {
 	ProjectsService ProjectsServiceI
 	TeamsService    TeamsServiceI
 	AiChatService   AiChatServiceI
+	PackagesService PackagesServiceI
 }
 
 type Deps struct {
@@ -84,6 +95,7 @@ type Deps struct {
 	ProjectsRepository     repository.ProjectsRepository
 	TeamsRepository        repository.TeamsRepository
 	RolesRepository        repository.RolesRepository
+	PackagesRepository     repository.PackagesRepository
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
 	RefreshTokenTTL        time.Duration
@@ -92,6 +104,7 @@ type Deps struct {
 	EmailConfig            config.EmailConfig
 	CodeGenerator          *codegenerator.CodeGenerator
 	OpenAI                 openAI
+	MattermostAdapter      MattermostAdapter
 	VerificationCodeLength int
 	ApiUrl                 string
 }
@@ -100,7 +113,7 @@ func NewService(deps *Deps) *Service {
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	rolesService := NewRolesService(deps.RolesRepository)
 	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, *rolesService)
-	userService := NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.VerificationCodeLength, deps.ApiUrl)
+	userService := NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.MattermostAdapter, deps.VerificationCodeLength, deps.ApiUrl)
 	return &Service{
 		AiChatService:   NewAiChatService(deps.OpenAI),
 		UserService:     userService,
@@ -109,5 +122,6 @@ func NewService(deps *Deps) *Service {
 		RolesService:    rolesService,
 		TasksService:    NewTasksService(deps.TasksRepository),
 		ProjectsService: NewProjectsService(deps.ProjectsRepository),
+		// PackagesService: NewPackagesService(deps.PackagesRepository),
 	}
 }

@@ -51,3 +51,11 @@ type UpdateUserSettingsDTO struct {
 	DateFormat     *string
 	TimeFormat     *string
 }
+
+type CreateUserMattermostPayloadDTO struct {
+	Email     string
+	Username  string
+	FirstName string
+	LastName  string
+	Password  string
+}

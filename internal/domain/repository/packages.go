@@ -1,7 +1,10 @@
 package repository
 
-import "context"
+import (
+	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
+)
 
 type PackagesRepository interface {
-	GetByID(ctx context.Context, id string)
+	// GetByID(ctx context.Context, id string)
+	CreateDefaultPackages(packages []model.Package) error
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/config"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/service"
 	openai "github.com/Coke15/AlphaWave-BackEnd/internal/infrastructure/ai/openAI"
+	"github.com/Coke15/AlphaWave-BackEnd/internal/infrastructure/mattermost"
 	httpRoutes "github.com/Coke15/AlphaWave-BackEnd/internal/interface/api/http"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/repository"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/auth/manager"
@@ -21,6 +22,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/email/smtp"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/paymants"
 )
 
 const configDir = "configs"
@@ -55,6 +57,15 @@ func Run() {
 	codeGenerator := codegenerator.NewCodeGenerator()
 
 	openAI := openai.NewOpenAiAPI(cfg.OpenAI.Token, cfg.OpenAI.Url)
+
+	paymentProvider := paymants.NewPaymentProvider("sk_test_51NnlKlH75mUJKHqVvdKp7fZOTPu6QqoXr4Sc5YxXKdbY6H4QY6O9dwwEc9VAMiT3CrcMZoNTPWk2whrArX5Phz4z00k5N8TkN9")
+
+	paymentProvider.Paymant(paymants.PaymantPayload{
+		Amount:   2000,
+		Currency: "usd",
+	})
+
+	mattermostAdapter := mattermost.NewMattermostAdapter(cfg.Mattermost.ApiUrl)
 	// -----
 
 	mongodb := mongoClient.Database(cfg.MongoDB.DBName)
@@ -66,12 +77,14 @@ func Run() {
 		TeamsRepository:        repository.Teams,
 		RolesRepository:        repository.Roles,
 		MemberRepository:       repository.Members,
+		PackagesRepository:     repository.Packages,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
 		AccessTokenTTL:         cfg.Auth.JWT.AccessTokenTTL,
 		RefreshTokenTTL:        cfg.Auth.JWT.RefreshTokenTTL,
 		VerificationCodeTTL:    cfg.Auth.VerificationCodeTTL,
 		Sender:                 emailSender,
+		MattermostAdapter:      mattermostAdapter,
 		EmailConfig:            cfg.Email,
 		CodeGenerator:          codeGenerator,
 		VerificationCodeLength: cfg.Auth.VerificationCodeLength,
