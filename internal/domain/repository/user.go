@@ -10,6 +10,7 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, input model.User) error
 	GetByСredentials(ctx context.Context, email, password string) (model.User, error)
+	DeleteUserByEmail(ctx context.Context, email string) error
 	GetUserByEmail(ctx context.Context, email string) (model.User, error)
 	GetUserById(ctx context.Context, userID string) (model.User, error)
 	GetUsersByQuery(ctx context.Context, ids []string, query model.GetUsersByQuery) ([]model.User, error)

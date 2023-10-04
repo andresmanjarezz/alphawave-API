@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -21,6 +22,7 @@ func NewMattermostAdapter(apiUrl string) *MattermostAdapter {
 	}
 }
 
+// Inputs
 type CreateUserInput struct {
 	Email     string `json:"email"`
 	Username  string `json:"username"`
@@ -29,6 +31,12 @@ type CreateUserInput struct {
 	Password  string `json:"password"`
 }
 
+type SignInUserInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// Response
 type Response struct {
 	Id            string `json:"id"`
 	CreateAt      int    `json:"create_at"`
@@ -41,16 +49,11 @@ type Response struct {
 	EmailVerified bool   `json:"email_verified"`
 }
 
-type SignInUserInput struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 type errorResponse struct {
-	Id            string `json:"id"`
-	Message       string `json:"message"`
-	DetailedError string `json:"detailed_error"`
-	StatusCode    uint16 `json:"status_code"`
+	StatusCode int    `json:"status_code"`
+	Id         string `json:"id"`
+	Message    string `json:"message"`
+	// RequestId  string `json:"request_id"`
 }
 
 func (a *MattermostAdapter) CreateUser(ctx context.Context, input types.CreateUserMattermostPayloadDTO) error {
@@ -83,8 +86,6 @@ func (a *MattermostAdapter) CreateUser(ctx context.Context, input types.CreateUs
 		return err
 	}
 
-	defer response.Body.Close()
-
 	body, err := ioutil.ReadAll(response.Body)
 
 	if err != nil {
@@ -92,18 +93,16 @@ func (a *MattermostAdapter) CreateUser(ctx context.Context, input types.CreateUs
 	}
 
 	if response.StatusCode != http.StatusCreated {
-		errorBody, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return err
-		}
 
 		var errorResp errorResponse
 
-		err = json.Unmarshal(errorBody, &errorResp)
+		err = json.Unmarshal(body, &errorResp)
+
 		if err != nil {
 			return err
 		}
-		return errors.New("error of creating a user in mattermost")
+
+		return fmt.Errorf("mattermost error: %s", errorResp.Message)
 	}
 
 	var output Response
@@ -146,25 +145,21 @@ func (a *MattermostAdapter) SignIn(email string, password string) (string, error
 
 	defer response.Body.Close()
 
-	// body, err := ioutil.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(response.Body)
 
 	if err != nil {
 		return "", err
 	}
 
 	if response.StatusCode != http.StatusOK {
-		errorBody, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return "", err
-		}
 
 		var errorResp errorResponse
 
-		err = json.Unmarshal(errorBody, &errorResp)
+		err = json.Unmarshal(body, &errorResp)
 		if err != nil {
 			return "", err
 		}
-		return "", errors.New("error login to mattermost")
+		return "", errors.New(errorResp.Message)
 	}
 
 	token := response.Header.Get("token")

@@ -185,6 +185,11 @@ func (r *MemberRepository) GetMemberByToken(ctx context.Context, token string) (
 	return member, nil
 }
 
+func (r *MemberRepository) GetMemberById(ctx context.Context, memberID string, teamID string) (model.Member, error) {
+	// todo
+	return model.Member{}, nil
+}
+
 func (r *MemberRepository) SetStatus(ctx context.Context, memberID string, status string) error {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

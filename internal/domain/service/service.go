@@ -12,6 +12,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/email"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/tokengenerator"
 )
 
 type MattermostAdapter interface {
@@ -103,6 +104,7 @@ type Deps struct {
 	Sender                 email.Sender
 	EmailConfig            config.EmailConfig
 	CodeGenerator          *codegenerator.CodeGenerator
+	TokenGenerator         *tokengenerator.TokenGenerator
 	OpenAI                 openAI
 	MattermostAdapter      MattermostAdapter
 	VerificationCodeLength int
@@ -117,7 +119,7 @@ func NewService(deps *Deps) *Service {
 	return &Service{
 		AiChatService:   NewAiChatService(deps.OpenAI),
 		UserService:     userService,
-		MemberService:   NewMemberService(deps.MemberRepository, deps.UserRepository, deps.CodeGenerator, teamsService, emailService, userService, deps.ApiUrl),
+		MemberService:   NewMemberService(deps.MemberRepository, deps.UserRepository, deps.CodeGenerator, deps.TokenGenerator, teamsService, emailService, userService, deps.ApiUrl),
 		TeamsService:    teamsService,
 		RolesService:    rolesService,
 		TasksService:    NewTasksService(deps.TasksRepository),

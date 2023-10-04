@@ -3,6 +3,7 @@ package model
 // ROLES CONSTANT
 const (
 	ROLE_ADMIN       = "ADMIN"
+	ROLE_OWNER       = "OWNER"
 	ROLE_MANAGER     = "MANAGER"
 	ROLE_EDITOR      = "EDITOR"
 	ROLE_VIEWER      = "VIEWER"
@@ -71,6 +72,9 @@ func CreateRoles(teamID string) TeamRoles {
 	adminRole := Role{
 		Role: ROLE_ADMIN,
 	}
+	ownerRole := Role{
+		Role: ROLE_OWNER,
+	}
 	managerRole := Role{
 		Role: ROLE_MANAGER,
 	}
@@ -89,7 +93,7 @@ func CreateRoles(teamID string) TeamRoles {
 
 	var roles []Role
 
-	roles = append(roles, adminRole, managerRole, editorRole, viewerRole, auditorRole, contributorRole)
+	roles = append(roles, adminRole, ownerRole, managerRole, editorRole, viewerRole, auditorRole, contributorRole)
 
 	return TeamRoles{
 		TeamID: teamID,
@@ -101,6 +105,9 @@ func GetAvailableRoles() []Role {
 	adminRole := Role{
 		Role: ROLE_ADMIN,
 	}
+	ownerRole := Role{
+		Role: ROLE_OWNER,
+	}
 	managerRole := Role{
 		Role: ROLE_MANAGER,
 	}
@@ -119,7 +126,7 @@ func GetAvailableRoles() []Role {
 
 	var roles []Role
 
-	roles = append(roles, adminRole, managerRole, editorRole, viewerRole, auditorRole, contributorRole)
+	roles = append(roles, adminRole, ownerRole, managerRole, editorRole, viewerRole, auditorRole, contributorRole)
 	return roles
 }
 

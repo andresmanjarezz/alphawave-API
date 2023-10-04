@@ -78,6 +78,10 @@ func (h *HandlerV1) createTeam(c *gin.Context) {
 		JobTitle: input.JobTitle,
 	})
 	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
+			return
+		}
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}

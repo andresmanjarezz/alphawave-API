@@ -100,6 +100,7 @@ func (h *HandlerV1) signUp(c *gin.Context) {
 	var input UserSignUpInput
 
 	if err := c.BindJSON(&input); err != nil {
+		logger.Errorf("incorect data format. err: %v", err)
 		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
 		return
 	}
@@ -112,31 +113,37 @@ func (h *HandlerV1) signUp(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserAlreadyExists) {
-			newResponse(c, http.StatusConflict, err.Error())
+			logger.Errorf("user already exists. err: %v", err)
+			newResponse(c, http.StatusConflict, apperrors.ErrUserAlreadyExists.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectEmailFormat) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			logger.Errorf("incorrect email format. err: %v", err)
+			newResponse(c, http.StatusBadRequest, apperrors.ErrIncorrectEmailFormat.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectPasswordFormat) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			logger.Errorf("incorect password format. err: %v", err)
+			newResponse(c, http.StatusBadRequest, apperrors.ErrIncorrectPasswordFormat.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrIncorrectUserData) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			logger.Errorf("incorect user data. err: %v", err)
+			newResponse(c, http.StatusBadRequest, apperrors.ErrIncorrectUserData.Error())
 			return
 		}
-		newResponse(c, http.StatusInternalServerError, err.Error())
+		logger.Errorf("err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
-
+	logger.Infof("user with email: %s created.", input.Email)
 	c.Status(http.StatusCreated)
 }
 
 func (h *HandlerV1) getUser(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {
+		logger.Errorf("error get user id. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -144,12 +151,15 @@ func (h *HandlerV1) getUser(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
+			logger.Errorf("user not found. err: %v", err)
 			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
 			return
 		}
+		logger.Errorf("err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
+
 	c.JSON(http.StatusOK, user)
 }
 
@@ -157,6 +167,7 @@ func (h *HandlerV1) resendVerificationCode(c *gin.Context) {
 	var input EmailInput
 
 	if err := c.BindJSON(&input); err != nil {
+		logger.Errorf("incorect data format. err: %v", err)
 		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
 		return
 	}
@@ -164,10 +175,12 @@ func (h *HandlerV1) resendVerificationCode(c *gin.Context) {
 	err := h.service.UserService.ResendVerificationCode(c.Request.Context(), input.Email)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusNotFound, err.Error())
+			logger.Errorf("user not found. err: %v", err)
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
 			return
 		}
-		newResponse(c, http.StatusInternalServerError, err.Error())
+		logger.Errorf("err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
 
@@ -178,6 +191,7 @@ func (h *HandlerV1) signIn(c *gin.Context) {
 	var input UserSignInInput
 
 	if err := c.BindJSON(&input); err != nil {
+		logger.Errorf("incorect data format. err: %v", err)
 		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
 		return
 	}
@@ -188,14 +202,16 @@ func (h *HandlerV1) signIn(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusNotFound, err.Error())
+			logger.Errorf("user not found. err: %v", err)
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrUserNotVerifyed) {
-			newResponse(c, http.StatusUnauthorized, err.Error())
+			logger.Errorf("user with email: %s not verifyed. err: %v", input.Email, err)
+			newResponse(c, http.StatusUnauthorized, apperrors.ErrUserNotVerifyed.Error())
 			return
 		}
-
+		logger.Errorf("err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -212,6 +228,7 @@ func (h *HandlerV1) signIn(c *gin.Context) {
 func (h *HandlerV1) userRefresh(c *gin.Context) {
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
+		logger.Errorf("error og geting refresh token from cookie. err: %v", err)
 		newResponse(c, http.StatusBadRequest, err.Error())
 
 		return
@@ -221,9 +238,11 @@ func (h *HandlerV1) userRefresh(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			newResponse(c, http.StatusNotFound, err.Error())
+			logger.Errorf("user not found. err: %v", err)
+			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
 			return
 		}
+		logger.Errorf("err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 
 		return
@@ -240,24 +259,28 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		newResponse(c, http.StatusBadRequest, "code is empty")
-
 		return
 	}
+
 	tokens, err := h.service.UserService.Verify(c.Request.Context(), code)
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrIncorrectVerificationCode) {
-			newResponse(c, http.StatusBadRequest, err.Error())
+			logger.Errorf("incorrect verification code. err: %v", err)
+			newResponse(c, http.StatusBadRequest, apperrors.ErrIncorrectVerificationCode.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrUserAlreadyVerifyed) {
-			newResponse(c, http.StatusConflict, err.Error())
+			logger.Errorf("user alredy verifyed. err: %v", err)
+			newResponse(c, http.StatusConflict, apperrors.ErrUserNotVerifyed.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrVerificationCodeExpired) {
-			newResponse(c, http.StatusGone, err.Error())
+			logger.Errorf("verification code expired. err: %v", err)
+			newResponse(c, http.StatusGone, apperrors.ErrVerificationCodeExpired.Error())
 			return
 		}
+		logger.Errorf("err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 
 		return

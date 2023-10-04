@@ -10,6 +10,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/repository"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/codegenerator"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/tokengenerator"
 )
 
 const (
@@ -25,15 +26,17 @@ type MemberService struct {
 	teamsService   TeamsServiceI
 	emailService   *EmailService
 	codeGenerator  *codegenerator.CodeGenerator
+	tokenGenerator *tokengenerator.TokenGenerator
 	apiUrl         string
 }
 
-func NewMemberService(repository repository.MemberRepository, userRepository repository.UserRepository, codeGenerator *codegenerator.CodeGenerator, teamsService TeamsServiceI, emailService *EmailService, userService UserServiceI, apiUrl string) *MemberService {
+func NewMemberService(repository repository.MemberRepository, userRepository repository.UserRepository, codeGenerator *codegenerator.CodeGenerator, tokenGenerator *tokengenerator.TokenGenerator, teamsService TeamsServiceI, emailService *EmailService, userService UserServiceI, apiUrl string) *MemberService {
 	return &MemberService{
 		repository:     repository,
 		userRepository: userRepository,
 		userService:    userService,
 		codeGenerator:  codeGenerator,
+		tokenGenerator: tokenGenerator,
 		teamsService:   teamsService,
 		emailService:   emailService,
 		apiUrl:         apiUrl,
@@ -259,3 +262,8 @@ func (s *MemberService) SetUserID(ctx context.Context, memberID string, userID s
 	}
 	return nil
 }
+
+// func (s *MemberService) ChangeUserEmail(ctx context.Context, memberID, teamID, email string) error {
+
+// 	member := s.repository.GetMemberByTeamIdAndUserId()
+// }

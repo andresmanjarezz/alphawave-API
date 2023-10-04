@@ -64,12 +64,21 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) err
 	}
 	verificationCode := fmt.Sprintf("%s%s", s.codeGenerator.RandomSecret(s.VerificationCodeLength), verificationCodeHash)
 
+	mattermostPassowrdHash, err := s.hasher.Hash(input.Password)
+	if err != nil {
+		return err
+	}
+
 	user := model.User{
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
 		JobTitle:  input.JobTitle,
 		Email:     input.Email,
 		Password:  passwordHash,
+		MattermostData: model.MattermostData{
+			Email:    input.Email,
+			Password: mattermostPassowrdHash[8:],
+		},
 		Verification: model.UserVerificationPayload{
 			VerificationCode:            verificationCode,
 			VerificationCodeExpiresTime: time.Now().Add(s.VerificationCodeTTL),
@@ -96,8 +105,12 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) err
 		Username:  input.Email[:strings.Index(input.Email, "@")],
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
-		Password:  passwordHash,
+		Password:  input.Password,
 	}); err != nil {
+		if err := s.repository.DeleteUserByEmail(ctx, input.Email); err != nil {
+			return err
+		}
+
 		return err
 	}
 
@@ -136,7 +149,6 @@ func (s *UserService) SignIn(ctx context.Context, input types.UserSignInDTO) (ty
 }
 
 func (s *UserService) LogOut(ctx context.Context, userID string) error {
-	// todo
 	return s.repository.RemoveSession(ctx, userID)
 }
 
@@ -278,7 +290,7 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 		return types.Tokens{}, err
 	}
 
-	token, err := s.mattermostAdapter.SignIn(user.Email, user.Password)
+	token, err := s.mattermostAdapter.SignIn(user.MattermostData.Email, user.MattermostData.Password)
 
 	if err != nil {
 		return types.Tokens{}, err

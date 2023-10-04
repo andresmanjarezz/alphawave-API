@@ -12,8 +12,14 @@ type User struct {
 	Verification   UserVerificationPayload `json:"verification" bson:"verification"`
 	RegisteredTime time.Time               `json:"registeredTime" bson:"registeredTime"`
 	LastVisitTime  time.Time               `json:"lastVisitTime" bson:"lastVisitTime"`
+	MattermostData MattermostData          `json:"mattermostData" bson:"mattermostData"`
 	Blocked        bool                    `json:"blocked" bson:"blocked"`
 	Settings       UserSettings            `json:"settings" bson:"settings"`
+}
+
+type MattermostData struct {
+	Email    string `json:"email" bson:"email"`
+	Password string `json:"password" bson:"password"`
 }
 
 type UserInfoShort struct {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
@@ -41,6 +42,28 @@ func (s *TeamsService) Create(ctx context.Context, userID string, input types.Cr
 	if err != nil {
 		return err
 	}
+
+	user, err := s.userRepository.GetUserById(ctx, userID)
+
+	if err != nil {
+		return err
+	}
+	roles := make([]string, 0, 1)
+
+	roles = append(roles, model.ROLE_OWNER)
+	if err := s.memberRepository.CreateMember(ctx, id, model.Member{
+		TeamID: id,
+		UserID: user.ID,
+		Email:  user.Email,
+		Status: USER_STATUS_ACTIVE,
+		Roles:  roles,
+	}); err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return err
+		}
+		return err
+	}
+
 	return nil
 }
 
@@ -76,8 +99,9 @@ func (s *TeamsService) GetTeamsByUser(ctx context.Context, userID string) ([]mod
 	}
 
 	teamsIds := make([]string, 0, len(members))
-
+	fmt.Printf("members: %v", members)
 	for _, member := range members {
+		fmt.Printf("teamID: %s", member.TeamID)
 		teamsIds = append(teamsIds, member.TeamID)
 	}
 

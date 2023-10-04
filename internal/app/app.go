@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,6 +24,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/paymants"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/tokengenerator"
 )
 
 const configDir = "configs"
@@ -60,12 +62,18 @@ func Run() {
 
 	paymentProvider := paymants.NewPaymentProvider("sk_test_51NnlKlH75mUJKHqVvdKp7fZOTPu6QqoXr4Sc5YxXKdbY6H4QY6O9dwwEc9VAMiT3CrcMZoNTPWk2whrArX5Phz4z00k5N8TkN9")
 
-	paymentProvider.Paymant(paymants.PaymantPayload{
-		Amount:   2000,
-		Currency: "usd",
-	})
+	// paymentProvider.Paymant(paymants.PaymantPayload{
+	// 	Amount:   2000,
+	// 	Currency: "usd",
+	// })
 
+	// id, err := paymentProvider.CreateCustomer("Roman", "abramenkoroman22@gmail.com", "New Client")
+	// fmt.Print(*id)
+	secret, err := paymentProvider.NewCard("cus_OkkHewbxDaNh2T")
+	fmt.Print(*secret)
 	mattermostAdapter := mattermost.NewMattermostAdapter(cfg.Mattermost.ApiUrl)
+
+	tokenGenerator := tokengenerator.NewTokenGenerator()
 	// -----
 
 	mongodb := mongoClient.Database(cfg.MongoDB.DBName)
@@ -87,6 +95,7 @@ func Run() {
 		MattermostAdapter:      mattermostAdapter,
 		EmailConfig:            cfg.Email,
 		CodeGenerator:          codeGenerator,
+		TokenGenerator:         tokenGenerator,
 		VerificationCodeLength: cfg.Auth.VerificationCodeLength,
 		ApiUrl:                 cfg.HTTP.Host,
 		OpenAI:                 openAI,

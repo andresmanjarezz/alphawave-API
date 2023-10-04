@@ -55,6 +55,22 @@ func (r *UserRepository) GetByСredentials(ctx context.Context, email, password 
 	return user, err
 }
 
+func (r *UserRepository) DeleteUserByEmail(ctx context.Context, email string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	res, err := r.db.DeleteOne(nCtx, bson.M{"email": email})
+
+	if err != nil {
+		return err
+	}
+
+	if res.DeletedCount == 0 {
+		return apperrors.ErrUserNotFound
+	}
+	return nil
+}
+
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

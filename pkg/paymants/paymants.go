@@ -1,11 +1,10 @@
 package paymants
 
 import (
-	"fmt"
-
-	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/charge"
+	"github.com/stripe/stripe-go/customer"
+	"github.com/stripe/stripe-go/setupintent"
+	"github.com/stripe/stripe-go/sub"
 )
 
 type PaymentProvider struct {
@@ -19,26 +18,78 @@ func NewPaymentProvider(stripeAPIKey string) *PaymentProvider {
 	}
 }
 
-type PaymantPayload struct {
-	Amount   int64
-	Currency string
-}
-
-func (p *PaymentProvider) Paymant(input PaymantPayload) {
-
-	params := &stripe.ChargeParams{
-		Amount:      stripe.Int64(input.Amount),
-		Currency:    stripe.String(input.Currency),
-		Description: stripe.String("Test Pay"),
+func (p *PaymentProvider) CreateCustomer(name, email, descr string) (*string, error) {
+	params := &stripe.CustomerParams{
+		Name:        &name,
+		Email:       &email,
+		Description: &descr,
 	}
 
-	params.SetSource("tok_visa")
-
-	ch, err := charge.New(params)
+	c, err := customer.New(params)
 
 	if err != nil {
-		logger.Error(err)
+		return nil, err
 	}
 
-	fmt.Printf("ID: %s, Amount: %d, Descr: %s", ch.ID, ch.Amount, ch.Description)
+	return &c.ID, nil
 }
+
+func (p *PaymentProvider) NewCard(customerID string) (secret *string, err error) {
+	params := &stripe.SetupIntentParams{
+		PaymentMethodTypes: []*string{
+			stripe.String("card"),
+		},
+		Customer: &customerID,
+	}
+	res, err := setupintent.New(params)
+
+	if err != nil {
+		return nil, err
+	}
+	return &res.ClientSecret, nil
+}
+
+func (p *PaymentProvider) CreateSubscription(customerID, priceID string) (*string, error) {
+	params := &stripe.SubscriptionParams{
+		Customer: &customerID,
+		Items: []*stripe.SubscriptionItemsParams{
+			{
+				Plan: &priceID,
+			},
+		},
+	}
+
+	s, err := sub.New(params)
+	if err != nil {
+		return nil, err
+	}
+	return &s.ID, nil
+}
+
+// func (p *PaymentProvider) UpdateSubscription(subID, priceID string) (*string, error) {
+// 	subItemParams := &stripe.SubscriptionItemListParams{
+// 		Subscription: &subID,
+// 	}
+// 	i := subitem.List(subItemParams)
+// 	var si *stripe.SubscriptionItem
+
+// 	for i.Next() {
+// 		si = i.SubscriptionItem()
+// 		break
+// 	}
+// 	if si == nil {
+// 		return nil, errors.New("doesn't exist items for subscription")
+// 	}
+
+// 	subParams := &stripe.SubscriptionParams{
+// 		CancelAtPeriodEnd: stripe.Bool(false),
+// 		ProrationBehavior: stripe.String(string(stripe.SubscriptionProrationBehaviorCreateProrations)),
+// 		Items: []*stripe.SubscriptionItemsParams{
+// 			{
+// 				ID:   &si.ID,
+// 				Plan: &priceID,
+// 			},
+// 		},
+// 		DefaultPaymentMethod: &paymentMethodId,
+// 	}
+// }
