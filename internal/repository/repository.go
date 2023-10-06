@@ -14,6 +14,7 @@ type Repository struct {
 	Teams    repository.TeamsRepository
 	Members  repository.MemberRepository
 	Packages repository.PackagesRepository
+	Files    repository.FilesRepository
 }
 
 func NewRepository(db *mongo.Database) *Repository {
@@ -25,5 +26,6 @@ func NewRepository(db *mongo.Database) *Repository {
 		Teams:    mongodb.NewTeamsRepository(db),
 		Members:  mongodb.NewMemberRepository(db),
 		Packages: mongodb.NewPackagesRepository(db),
+		Files:    mongodb.NewFilesRepository(db),
 	}
 }

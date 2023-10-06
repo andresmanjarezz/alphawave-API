@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/xlzd/gotp"
-
 )
 
 type CodeGenerator struct {
@@ -26,4 +26,9 @@ func (g *CodeGenerator) GenerateUniqueCode() string {
 
 func (g *CodeGenerator) RandomSecret(len int) string {
 	return gotp.RandomSecret(len)
+}
+
+func (g *CodeGenerator) GenerateUUID() string {
+	uuid := uuid.New().String()
+	return uuid
 }

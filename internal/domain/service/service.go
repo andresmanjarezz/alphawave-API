@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/config"
@@ -74,6 +75,14 @@ type PackagesServiceI interface {
 	CreateDefaultPackages() error
 }
 
+type FilesServiceI interface {
+	Create(ctx context.Context, reader io.Reader, input types.CreateFileDTO) error
+	CreateFolder(ctx context.Context, input types.CreateFolderDTO) error
+	GetFilePresignedURL(ctx context.Context, teamID, fileID string) (string, error)
+	GetFile(ctx context.Context, teamID, fileID string) (*types.GetFileDTO, error)
+	Delete(ctx context.Context, teamId, fileId string) error
+}
+
 type ProjectsServiceI interface {
 }
 
@@ -86,6 +95,7 @@ type Service struct {
 	TeamsService    TeamsServiceI
 	AiChatService   AiChatServiceI
 	PackagesService PackagesServiceI
+	FilesService    FilesServiceI
 }
 
 type Deps struct {
@@ -97,6 +107,8 @@ type Deps struct {
 	TeamsRepository        repository.TeamsRepository
 	RolesRepository        repository.RolesRepository
 	PackagesRepository     repository.PackagesRepository
+	FilesRepository        repository.FilesRepository
+	StorageProvider        storageProvider
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
 	RefreshTokenTTL        time.Duration
@@ -112,6 +124,7 @@ type Deps struct {
 }
 
 func NewService(deps *Deps) *Service {
+	filesService := NewFilesService(deps.StorageProvider, deps.FilesRepository, deps.CodeGenerator)
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	rolesService := NewRolesService(deps.RolesRepository)
 	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, *rolesService)
@@ -124,6 +137,7 @@ func NewService(deps *Deps) *Service {
 		RolesService:    rolesService,
 		TasksService:    NewTasksService(deps.TasksRepository),
 		ProjectsService: NewProjectsService(deps.ProjectsRepository),
+		FilesService:    filesService,
 		// PackagesService: NewPackagesService(deps.PackagesRepository),
 	}
 }

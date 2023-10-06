@@ -28,6 +28,7 @@ type Config struct {
 	Email       EmailConfig
 	OpenAI      OpenAIConfig
 	Mattermost  MattermostConfig
+	MinIO       MinioConfig
 }
 
 type (
@@ -61,6 +62,12 @@ type (
 	OpenAIConfig struct {
 		Url   string
 		Token string
+	}
+
+	MinioConfig struct {
+		Endpoint        string
+		AccessKeyID     string
+		SecretAccessKey string
 	}
 
 	JWTConfig struct {
@@ -178,6 +185,10 @@ func setFromEnv(cfg *Config) {
 
 	cfg.OpenAI.Url = os.Getenv("OPEN_AI_API_URL")
 	cfg.OpenAI.Token = os.Getenv("OPEN_AI_TOKEN")
+
+	cfg.MinIO.Endpoint = os.Getenv("MINIO_ENDPOINT")
+	cfg.MinIO.AccessKeyID = os.Getenv("MINIO_ACCESS_KEY_ID")
+	cfg.MinIO.SecretAccessKey = os.Getenv("MINIO_SECRECT_ACCESS_KEY")
 }
 
 func SetDefault() {

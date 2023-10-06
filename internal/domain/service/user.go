@@ -282,26 +282,26 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 		RefreshToken: tokens.RefreshToken,
 		ExpiresTime:  time.Now().Add(s.RefreshTokenTTL),
 	}
-	user, err := s.repository.GetUserById(ctx, userID)
-	if err != nil {
-		if errors.Is(err, apperrors.ErrUserNotFound) {
-			return types.Tokens{}, apperrors.ErrUserNotFound
-		}
-		return types.Tokens{}, err
-	}
+	// user, err := s.repository.GetUserById(ctx, userID)
+	// if err != nil {
+	// 	if errors.Is(err, apperrors.ErrUserNotFound) {
+	// 		return types.Tokens{}, apperrors.ErrUserNotFound
+	// 	}
+	// 	return types.Tokens{}, err
+	// }
 
-	token, err := s.mattermostAdapter.SignIn(user.MattermostData.Email, user.MattermostData.Password)
+	// token, err := s.mattermostAdapter.SignIn(user.MattermostData.Email, user.MattermostData.Password)
 
-	if err != nil {
-		return types.Tokens{}, err
-	}
+	// if err != nil {
+	// 	return types.Tokens{}, err
+	// }
 
 	err = s.repository.SetSession(ctx, userID, session, time.Now())
 
 	return types.Tokens{
-		AccessToken:     tokens.AccessToken,
-		RefreshToken:    tokens.RefreshToken,
-		MattermostToken: token,
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		// MattermostToken: token,
 	}, err
 }
 

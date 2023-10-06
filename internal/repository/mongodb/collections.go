@@ -8,4 +8,5 @@ const (
 	tasksCollection    = "tasks"
 	projectsCollection = "projects"
 	packagesCollection = "packages"
+	filesCollection    = "files"
 )
