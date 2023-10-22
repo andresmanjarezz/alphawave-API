@@ -15,39 +15,47 @@ type TeamsService struct {
 	repository       repository.TeamsRepository
 	userRepository   repository.UserRepository
 	memberRepository repository.MemberRepository
+	paymentService   PaymentServiceI
 	rolesService     RolesService
 }
 
-func NewTeamsService(repository repository.TeamsRepository, userRepository repository.UserRepository, memberRepository repository.MemberRepository, rolesService RolesService) *TeamsService {
+func NewTeamsService(repository repository.TeamsRepository, userRepository repository.UserRepository, memberRepository repository.MemberRepository, paymentService PaymentServiceI, rolesService RolesService) *TeamsService {
 	return &TeamsService{
 		repository:       repository,
 		userRepository:   userRepository,
 		memberRepository: memberRepository,
 		rolesService:     rolesService,
+		paymentService:   paymentService,
 	}
 }
 
-func (s *TeamsService) Create(ctx context.Context, userID string, input types.CreateTeamsDTO) error {
-
-	team := model.Team{
-		TeamName: input.TeamName,
-		JobTitle: input.JobTitle,
-		OwnerID:  userID,
-	}
-	id, err := s.repository.CreateTeam(ctx, team)
-	if err != nil {
-		return err
-	}
-	err = s.rolesService.Create(ctx, id)
-	if err != nil {
-		return err
-	}
+func (s *TeamsService) Create(ctx context.Context, userID string, input types.CreateTeamsDTO) (string, error) {
 
 	user, err := s.userRepository.GetUserById(ctx, userID)
 
 	if err != nil {
-		return err
+		return "", err
 	}
+
+	customerID, err := s.paymentService.CreateCustomer(input.TeamName, user.Email, input.JobTitle)
+	if err != nil {
+		return "", err
+	}
+	team := model.Team{
+		TeamName:   input.TeamName,
+		JobTitle:   input.JobTitle,
+		CustomerId: *customerID,
+		OwnerID:    userID,
+	}
+	id, err := s.repository.CreateTeam(ctx, team)
+	if err != nil {
+		return "", err
+	}
+	err = s.rolesService.Create(ctx, id)
+	if err != nil {
+		return "", err
+	}
+
 	roles := make([]string, 0, 1)
 
 	roles = append(roles, model.ROLE_OWNER)
@@ -59,12 +67,12 @@ func (s *TeamsService) Create(ctx context.Context, userID string, input types.Cr
 		Roles:  roles,
 	}); err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
-			return err
+			return "", err
 		}
-		return err
+		return "", err
 	}
 
-	return nil
+	return id, nil
 }
 
 func (s *TeamsService) UpdateTeamSettings(ctx context.Context, teamID string, input types.UpdateTeamSettingsDTO) error {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -54,13 +55,16 @@ func (h *HandlerV1) memberSignUp(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserAlreadyExists) {
+			logger.Debugf("failed to sign up member. info: %v", err)
 			newResponse(c, http.StatusConflict, apperrors.ErrUserAlreadyExists.Error())
 			return
 		}
 		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			logger.Debugf("failed to sign up member. info: %v", err)
 			newResponse(c, http.StatusNotFound, apperrors.ErrMemberNotFound.Error())
 			return
 		}
+		logger.Errorf("failed to sign up member. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -78,11 +82,13 @@ func (h *HandlerV1) getMembers(c *gin.Context) {
 
 	skip, err := strconv.Atoi(c.Query("skip"))
 	if err != nil {
+		logger.Error(err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
 	limit, err := strconv.Atoi(c.Query("limit"))
 	if err != nil {
+		logger.Error(err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -96,8 +102,11 @@ func (h *HandlerV1) getMembers(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			logger.Errorf("failed to get members. err: %v", err)
 			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
 		}
+		logger.Errorf("failed to get members. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -109,6 +118,7 @@ func (h *HandlerV1) userInvite(c *gin.Context) {
 
 	id, err := getTeamId(c)
 	if err != nil {
+		logger.Warnf("failed to invite user. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -121,6 +131,7 @@ func (h *HandlerV1) userInvite(c *gin.Context) {
 	err = h.service.MemberService.UserInvite(c.Request.Context(), id, input.Email, input.Role)
 
 	if err != nil {
+		logger.Errorf("failed to invite user. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -130,6 +141,7 @@ func (h *HandlerV1) userInvite(c *gin.Context) {
 func (h *HandlerV1) acceptInvite(c *gin.Context) {
 	token := c.Param("token")
 	if token == "" {
+		logger.Warn("failed to accept invite. err: token is empty")
 		newResponse(c, http.StatusBadRequest, "token is empty")
 		return
 	}

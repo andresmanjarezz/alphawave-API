@@ -1,11 +1,12 @@
 package model
 
 type Team struct {
-	ID       string       `json:"id" bson:"_id,omitempty"`
-	TeamName string       `json:"teamName" bson:"teamName"`
-	JobTitle string       `json:"jobTitle" bson:"jobTitle"`
-	OwnerID  string       `json:"ownerID" bson:"ownerID"`
-	Settings TeamSettings `json:"settings" bson:"settings"`
+	ID         string       `json:"id" bson:"_id,omitempty"`
+	TeamName   string       `json:"teamName" bson:"teamName"`
+	JobTitle   string       `json:"jobTitle" bson:"jobTitle"`
+	OwnerID    string       `json:"ownerID" bson:"ownerID"`
+	CustomerId string       `json:"customerId" bson:"customerId"`
+	Settings   TeamSettings `json:"settings" bson:"settings"`
 }
 
 type TeamSettings struct {

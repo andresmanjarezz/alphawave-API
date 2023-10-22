@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -90,8 +89,8 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) err
 	isDuplicate, err := s.repository.IsDuplicate(ctx, input.Email)
 	if err != nil {
 		return err
-
 	}
+
 	if isDuplicate {
 		return apperrors.ErrUserAlreadyExists
 	}
@@ -100,19 +99,19 @@ func (s *UserService) SignUp(ctx context.Context, input types.UserSignUpDTO) err
 		return err
 	}
 
-	if err := s.mattermostAdapter.CreateUser(ctx, types.CreateUserMattermostPayloadDTO{
-		Email:     input.Email,
-		Username:  input.Email[:strings.Index(input.Email, "@")],
-		FirstName: input.FirstName,
-		LastName:  input.LastName,
-		Password:  input.Password,
-	}); err != nil {
-		if err := s.repository.DeleteUserByEmail(ctx, input.Email); err != nil {
-			return err
-		}
+	// if err := s.mattermostAdapter.CreateUser(ctx, types.CreateUserMattermostPayloadDTO{
+	// 	Email:     input.Email,
+	// 	Username:  input.Email[:strings.Index(input.Email, "@")],
+	// 	FirstName: input.FirstName,
+	// 	LastName:  input.LastName,
+	// 	Password:  mattermostPassowrdHash[8:],
+	// }); err != nil {
+	// 	if err := s.repository.DeleteUserByEmail(ctx, input.Email); err != nil {
+	// 		return err
+	// 	}
 
-		return err
-	}
+	// 	return err
+	// }
 
 	go func() {
 		err = s.emailService.SendUserVerificationEmail(VerificationEmailInput{
@@ -282,15 +281,16 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 		RefreshToken: tokens.RefreshToken,
 		ExpiresTime:  time.Now().Add(s.RefreshTokenTTL),
 	}
-	user, err := s.repository.GetUserById(ctx, userID)
-	if err != nil {
-		if errors.Is(err, apperrors.ErrUserNotFound) {
-			return types.Tokens{}, apperrors.ErrUserNotFound
-		}
-		return types.Tokens{}, err
-	}
+	// user, err := s.repository.GetUserById(ctx, userID)
+	// if err != nil {
+	// 	if errors.Is(err, apperrors.ErrUserNotFound) {
+	// 		return types.Tokens{}, apperrors.ErrUserNotFound
+	// 	}
+	// 	return types.Tokens{}, err
+	// }
 
-	token, err := s.mattermostAdapter.SignIn(user.MattermostData.Email, user.MattermostData.Password)
+	// token, err := s.mattermostAdapter.SignIn(user.MattermostData.Email, user.MattermostData.Password)
+	token := ""
 
 	if err != nil {
 		return types.Tokens{}, err

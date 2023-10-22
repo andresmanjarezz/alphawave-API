@@ -74,6 +74,23 @@ func CreateRoles(teamID string) TeamRoles {
 	}
 	ownerRole := Role{
 		Role: ROLE_OWNER,
+		Permissions: Permissions{
+			UploadFiles:          true,
+			CreateProjects:       true,
+			DeleteProjects:       true,
+			DeleteFiles:          true,
+			ShareFilesInternally: true,
+			ShareFilesExternally: true,
+			AccessAiChat:         true,
+			EditProjectPage:      true,
+			AddNewTasks:          true,
+			AccessMessager:       true,
+			InviteMembers:        true,
+			EditJobTitle:         true,
+			EditName:             true,
+			EditEmailAddress:     true,
+			InviteAdmins:         true,
+		},
 	}
 	managerRole := Role{
 		Role: ROLE_MANAGER,

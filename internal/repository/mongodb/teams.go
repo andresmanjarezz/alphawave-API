@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -137,6 +138,6 @@ func (r *TeamsRepository) GetTeamByID(ctx context.Context, teamID string) (model
 	if err := res.Decode(&team); err != nil {
 		return team, err
 	}
-
+	fmt.Println(team)
 	return team, nil
 }

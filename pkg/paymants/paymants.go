@@ -35,6 +35,7 @@ func (p *PaymentProvider) CreateCustomer(name, email, descr string) (*string, er
 }
 
 func (p *PaymentProvider) NewCard(customerID string) (secret *string, err error) {
+
 	params := &stripe.SetupIntentParams{
 		PaymentMethodTypes: []*string{
 			stripe.String("card"),
@@ -42,19 +43,30 @@ func (p *PaymentProvider) NewCard(customerID string) (secret *string, err error)
 		Customer: &customerID,
 	}
 	res, err := setupintent.New(params)
-
 	if err != nil {
 		return nil, err
 	}
 	return &res.ClientSecret, nil
 }
 
+// func (p *PaymentProvider) GetListPaymentMethod(customerID string) *[]string {
+// 	params := &stripe.PaymentMethodListParams{
+// 		Customer: stripe.String(customerID),
+// 		Type:     stripe.String("card"),
+// 	}
+// 	i := paymentmethod.List(params)
+
+// 	for i.Next() {
+// 		pm := i.PaymentMethod()
+// 	}
+// }
+
 func (p *PaymentProvider) CreateSubscription(customerID, priceID string) (*string, error) {
 	params := &stripe.SubscriptionParams{
-		Customer: &customerID,
+		Customer: stripe.String(customerID),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Plan: &priceID,
+				Plan: stripe.String(priceID),
 			},
 		},
 	}
@@ -93,3 +105,17 @@ func (p *PaymentProvider) CreateSubscription(customerID, priceID string) (*strin
 // 		DefaultPaymentMethod: &paymentMethodId,
 // 	}
 // }
+
+func (p *PaymentProvider) CancelSubscription(subscriptionID string) error {
+	cancel := true
+
+	subscriptionParams := &stripe.SubscriptionParams{
+		CancelAtPeriodEnd: &cancel,
+	}
+
+	_, err := sub.Update(subscriptionID, subscriptionParams)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -6,10 +6,12 @@ const (
 	OrderStatusCreated = "created"
 	OrderStatusPaid    = "paid"
 	OrderStatusFailed  = "failed"
+	OrderStatusCancel  = "cancel"
 )
 
 type Subscription struct {
 	ID           string        `json:"id" bson:"_id,omitempty"`
+	StripeSubId  string        `json:"stripeSubId" bson:"stripeSubId"`
 	TeamID       string        `json:"teamID" bson:"teamID"`
 	UserInfo     UserInfoShort `json:"userInfo" bson:"userInfo"`
 	Amount       string        `json:"amount" bson:"amount"`

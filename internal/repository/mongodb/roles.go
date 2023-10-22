@@ -63,6 +63,7 @@ func (r *RolesRepository) UpdatePermissions(ctx context.Context, teamID string, 
 	_, err := r.db.UpdateOne(nCtx, bson.M{"teamID": teamID}, bson.M{"$set": bson.M{"roles": input}})
 
 	if err != nil {
+
 		return err
 	}
 	return nil

@@ -21,6 +21,12 @@ type MattermostAdapter interface {
 	SignIn(email string, password string) (string, error)
 }
 
+type PaymentProvider interface {
+	CreateCustomer(name, email, descr string) (*string, error)
+	NewCard(customerID string) (secret *string, err error)
+	CreateSubscription(customerID, priceID string) (*string, error)
+}
+
 type UserServiceI interface {
 	SignUp(ctx context.Context, input types.UserSignUpDTO) error
 	SignIn(ctx context.Context, input types.UserSignInDTO) (types.Tokens, error)
@@ -46,7 +52,7 @@ type MemberServiceI interface {
 }
 
 type TeamsServiceI interface {
-	Create(ctx context.Context, userID string, input types.CreateTeamsDTO) error
+	Create(ctx context.Context, userID string, input types.CreateTeamsDTO) (string, error)
 	GetTeamByID(ctx context.Context, teamID string) (model.Team, error)
 	GetTeamsByUser(ctx context.Context, userID string) ([]model.Team, error)
 	UpdateTeamSettings(ctx context.Context, teamID string, input types.UpdateTeamSettingsDTO) error
@@ -72,7 +78,9 @@ type AiChatServiceI interface {
 }
 
 type PackagesServiceI interface {
-	CreateDefaultPackages() error
+	// CreateDefaultPackages() error
+	GetAll(ctx context.Context) ([]model.Package, error)
+	GetById(ctx context.Context, packageId string) (model.Package, error)
 }
 
 type FilesServiceI interface {
@@ -83,19 +91,30 @@ type FilesServiceI interface {
 	Delete(ctx context.Context, teamId, fileId string) error
 }
 
+type PaymentServiceI interface {
+	CreateCustomer(name, email, descr string) (*string, error)
+	CreateNewPaymentMethod(ctx context.Context, teamID string) (*string, error)
+}
+
+type SubscriptionServiceI interface {
+	Create(ctx context.Context, userID string, packageID string, teamID string) error
+}
+
 type ProjectsServiceI interface {
 }
 
 type Service struct {
-	UserService     UserServiceI
-	MemberService   MemberServiceI
-	TasksService    TasksServiceI
-	RolesService    RolesServiceI
-	ProjectsService ProjectsServiceI
-	TeamsService    TeamsServiceI
-	AiChatService   AiChatServiceI
-	PackagesService PackagesServiceI
-	FilesService    FilesServiceI
+	UserService         UserServiceI
+	MemberService       MemberServiceI
+	TasksService        TasksServiceI
+	RolesService        RolesServiceI
+	ProjectsService     ProjectsServiceI
+	TeamsService        TeamsServiceI
+	AiChatService       AiChatServiceI
+	PackagesService     PackagesServiceI
+	PaymentService      PaymentServiceI
+	SubscriptionService SubscriptionServiceI
+	FilesService        FilesServiceI
 }
 
 type Deps struct {
@@ -108,6 +127,7 @@ type Deps struct {
 	RolesRepository        repository.RolesRepository
 	PackagesRepository     repository.PackagesRepository
 	FilesRepository        repository.FilesRepository
+	SubscriptionRepository repository.SubscriptionRepository
 	StorageProvider        storageProvider
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
@@ -117,6 +137,7 @@ type Deps struct {
 	EmailConfig            config.EmailConfig
 	CodeGenerator          *codegenerator.CodeGenerator
 	TokenGenerator         *tokengenerator.TokenGenerator
+	PaymentProvider        PaymentProvider
 	OpenAI                 openAI
 	MattermostAdapter      MattermostAdapter
 	VerificationCodeLength int
@@ -124,20 +145,25 @@ type Deps struct {
 }
 
 func NewService(deps *Deps) *Service {
+	packagesService := NewPackagesService(deps.PackagesRepository)
+	paymentService := NewPaymentService(deps.PaymentProvider, deps.TeamsRepository)
 	filesService := NewFilesService(deps.StorageProvider, deps.FilesRepository, deps.CodeGenerator)
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	rolesService := NewRolesService(deps.RolesRepository)
-	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, *rolesService)
+	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, paymentService, *rolesService)
 	userService := NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.MattermostAdapter, deps.VerificationCodeLength, deps.ApiUrl)
+	subscriptionService := NewSubscriptionService(userService, teamsService, packagesService, deps.SubscriptionRepository, deps.PaymentProvider)
 	return &Service{
-		AiChatService:   NewAiChatService(deps.OpenAI),
-		UserService:     userService,
-		MemberService:   NewMemberService(deps.MemberRepository, deps.UserRepository, deps.CodeGenerator, deps.TokenGenerator, teamsService, emailService, userService, deps.ApiUrl),
-		TeamsService:    teamsService,
-		RolesService:    rolesService,
-		TasksService:    NewTasksService(deps.TasksRepository),
-		ProjectsService: NewProjectsService(deps.ProjectsRepository),
-		FilesService:    filesService,
-		// PackagesService: NewPackagesService(deps.PackagesRepository),
+		AiChatService:       NewAiChatService(deps.OpenAI),
+		UserService:         userService,
+		MemberService:       NewMemberService(deps.MemberRepository, deps.UserRepository, deps.CodeGenerator, deps.TokenGenerator, teamsService, emailService, userService, deps.ApiUrl),
+		TeamsService:        teamsService,
+		RolesService:        rolesService,
+		TasksService:        NewTasksService(deps.TasksRepository),
+		ProjectsService:     NewProjectsService(deps.ProjectsRepository),
+		FilesService:        filesService,
+		PaymentService:      paymentService,
+		SubscriptionService: subscriptionService,
+		PackagesService:     packagesService,
 	}
 }

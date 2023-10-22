@@ -3,10 +3,11 @@ package types
 import "time"
 
 type TeamsDTO struct {
-	ID       string `json:"id"`
-	TeamName string `json:"teamName"`
-	JobTitle string `json:"jobTitle"`
-	OwnerID  string `json:"ownerID"`
+	ID         string `json:"id"`
+	TeamName   string `json:"teamName"`
+	JobTitle   string `json:"jobTitle"`
+	OwnerID    string `json:"ownerID"`
+	CustomerId string `json:"customerId"`
 }
 
 type CreateTeamsDTO struct {

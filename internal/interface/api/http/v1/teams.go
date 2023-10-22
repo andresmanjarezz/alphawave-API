@@ -9,6 +9,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,6 +39,10 @@ func (h *HandlerV1) initTeamsRoutes(api *gin.RouterGroup) {
 type createTeamInput struct {
 	TeamName string `json:"teamName"`
 	JobTitle string `json:"jobTitle"`
+}
+
+type createTeamResponse struct {
+	Id string `json:"id"`
 }
 
 type updateTeamSettingsInput struct {
@@ -73,25 +78,30 @@ func (h *HandlerV1) createTeam(c *gin.Context) {
 		return
 	}
 
-	err = h.service.TeamsService.Create(c.Request.Context(), userID, types.CreateTeamsDTO{
+	teamId, err := h.service.TeamsService.Create(c.Request.Context(), userID, types.CreateTeamsDTO{
 		TeamName: input.TeamName,
 		JobTitle: input.JobTitle,
 	})
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
+			logger.Errorf("failed to create team. err: %v", err)
 			newResponse(c, http.StatusNotFound, apperrors.ErrUserNotFound.Error())
 			return
 		}
+		logger.Errorf("failed to create team. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
 
-	c.Status(http.StatusCreated)
+	c.JSON(http.StatusCreated, createTeamResponse{
+		Id: teamId,
+	})
 }
 
 func (h *HandlerV1) setSession(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {
+		logger.Errorf("failed to set session for team. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
@@ -117,19 +127,16 @@ func (h *HandlerV1) setSession(c *gin.Context) {
 		Roles:  []string{},
 	}
 
-	fmt.Printf("userID: %s, ownerID: %s", userID, team.OwnerID)
-	if team.OwnerID != userID {
-		member, err := h.service.MemberService.GetMemberByTeamIdAndUserId(c.Request.Context(), team.ID, userID)
-		if err != nil {
-			if errors.Is(err, apperrors.ErrMemberNotFound) {
-				newResponse(c, http.StatusNotFound, apperrors.ErrMemberNotFound.Error())
-				return
-			}
-			newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+	member, err := h.service.MemberService.GetMemberByTeamIdAndUserId(c.Request.Context(), team.ID, userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrMemberNotFound.Error())
 			return
 		}
-		sessionData.Roles = member.Roles
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
 	}
+	sessionData.Roles = member.Roles
 
 	sessionDataJson, err := json.Marshal(sessionData)
 	if err != nil {

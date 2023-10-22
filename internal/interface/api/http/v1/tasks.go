@@ -6,21 +6,23 @@ import (
 	"net/http"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
+	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
 func (h *HandlerV1) initTasksRoutes(api *gin.RouterGroup) {
 	tasks := api.Group("/tasks")
 	{
-		authenticated := tasks.Group("/", h.userIdentity)
+		authenticated := tasks.Group("/", h.userIdentity, h.setTeamSessionFromCookie)
 		{
-			authenticated.POST("/create", h.createTask)
+			authenticated.POST("/create", h.createTask, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
 			authenticated.GET("/:id", h.getByIdTask)
 			authenticated.GET("/", h.getAllTasks)
-			authenticated.POST("/change-status", h.changeStatus)
-			authenticated.POST("/update", h.updateByIdTask)
-			authenticated.DELETE("/:status", h.deleteAll)
+			authenticated.POST("/change-status", h.changeStatus, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
+			authenticated.POST("/update", h.updateByIdTask, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
+			authenticated.DELETE("/:status", h.deleteAll, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
 		}
 	}
 }
@@ -65,6 +67,7 @@ func (h *HandlerV1) createTask(c *gin.Context) {
 	})
 
 	if err != nil {
+		logger.Errorf("failed to create new task. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}

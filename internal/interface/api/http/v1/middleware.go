@@ -8,6 +8,7 @@ import (
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,17 +28,20 @@ func getTeamId(c *gin.Context) (string, error) {
 }
 
 func getRole(c *gin.Context) (string, error) {
-	idFromCtx, ok := c.Get(roleCtx)
+	roleFromCtx, ok := c.Get(roleCtx)
 	if !ok {
 		return "", errors.New("roleCtx not found")
 	}
 
-	id, ok := idFromCtx.(string)
+	roles, ok := roleFromCtx.([]string)
 	if !ok {
 		return "", errors.New("roleCtx is of invalid type")
 	}
-
-	return id, nil
+	var defaultRole string
+	if len(roles) > 0 {
+		defaultRole = roles[0]
+	}
+	return defaultRole, nil
 }
 
 func getIdByContext(c *gin.Context, context string) (string, error) {
@@ -109,6 +113,7 @@ func (h *HandlerV1) checkRole(permission string) gin.HandlerFunc {
 		}
 		role, err := getRole(c)
 		if err != nil {
+			logger.Errorf("failed to get role. err: %v", err)
 			newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 			return
 		}
@@ -117,11 +122,11 @@ func (h *HandlerV1) checkRole(permission string) gin.HandlerFunc {
 			newResponse(c, http.StatusForbidden, errors.New("forbidden").Error())
 			return
 		}
-
 		for _, item := range roles {
 			if role == item.Role {
 				if !CheckPermissions(permission, item.Permissions) {
 					newResponse(c, http.StatusForbidden, errors.New("access denied").Error())
+					return
 				}
 			}
 		}
