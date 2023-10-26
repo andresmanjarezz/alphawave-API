@@ -198,14 +198,14 @@ func (s *UserService) Verify(ctx context.Context, verificationCode string) (type
 		return types.Tokens{}, apperrors.ErrVerificationCodeExpired
 	}
 
-	id, err := s.repository.Verify(ctx, verificationCode)
+	err = s.repository.Verify(ctx, verificationCode)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
 			return types.Tokens{}, apperrors.ErrUserNotFound
 		}
 		return types.Tokens{}, err
 	}
-	return s.createSession(ctx, id)
+	return s.createSession(ctx, user.ID)
 }
 
 func (s *UserService) ResendVerificationCode(ctx context.Context, email string) error {

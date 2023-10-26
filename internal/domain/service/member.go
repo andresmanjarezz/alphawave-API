@@ -65,7 +65,7 @@ func (s *MemberService) MemberSignUp(ctx context.Context, token string, input ty
 		return err
 	}
 
-	if err := s.SetStatus(ctx, member.ID, STATUS_ACTIVE); err != nil {
+	if err := s.SetStatus(ctx, member.ID, USER_STATUS_ACTIVE); err != nil {
 		return err
 	}
 
@@ -226,7 +226,7 @@ func (s *MemberService) AcceptInvite(ctx context.Context, token string) (string,
 		}
 		return "", err
 	}
-	if err := s.SetStatus(ctx, member.ID, STATUS_ACTIVE); err != nil {
+	if err := s.SetStatus(ctx, member.ID, USER_STATUS_ACTIVE); err != nil {
 		return "", err
 	}
 	if err := s.SetUserID(ctx, member.ID, user.ID); err != nil {

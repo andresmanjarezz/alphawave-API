@@ -234,15 +234,16 @@ func (r *UserRepository) SetSession(ctx context.Context, userID string, session 
 	return err
 }
 
-func (r *UserRepository) Verify(ctx context.Context, verificationCode string) (string, error) {
+func (r *UserRepository) Verify(ctx context.Context, verificationCode string) error {
 	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	res, err := r.db.UpdateOne(nCtx, bson.M{"verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true, "verification.verificationCode": ""}})
+	_, err := r.db.UpdateOne(nCtx, bson.M{"verification.verificationCode": verificationCode}, bson.M{"$set": bson.M{"verification.verified": true, "verification.verificationCode": ""}})
+	if err != nil {
+		return err
+	}
 
-	ObjectID := res.UpsertedID.(primitive.ObjectID)
-	id := ObjectID.Hex()
-	return id, err
+	return nil
 }
 
 func (r *UserRepository) ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error {

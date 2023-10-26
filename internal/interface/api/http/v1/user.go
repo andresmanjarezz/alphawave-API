@@ -286,8 +286,8 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 		return
 	}
 	c.SetCookie("refresh_token", tokens.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
+	fmt.Println(h.frontEndUrl)
 	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/create-team?access_token=%s/mattermost_token=%s", h.frontEndUrl, tokens.AccessToken, tokens.MattermostToken))
-	// c.String(http.StatusOK, "success")
 
 }
 

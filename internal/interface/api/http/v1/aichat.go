@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
 	"github.com/gin-gonic/gin"
 )
@@ -13,9 +12,9 @@ import (
 func (h *HandlerV1) initAiChatRoutes(api *gin.RouterGroup) {
 	ai := api.Group("/ai")
 	{
-		authenticated := ai.Group("/", h.userIdentity, h.setTeamSessionFromCookie)
+		// authenticated := ai.Group("/", h.userIdentity, h.setTeamSessionFromCookie)
 		{
-			authenticated.POST("/new-message", h.newMessage, h.checkRole(model.PERMISSION_ACCESS_AI_CHAT))
+			ai.POST("/new-message", h.newMessage)
 		}
 	}
 }

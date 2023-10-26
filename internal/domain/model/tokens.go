@@ -3,8 +3,8 @@ package model
 import "time"
 
 type Tokens struct {
-	AccessToken  string
-	RefreshToken string
+	AccessToken  string `json:"accessToken" bson:"accessToken"`
+	RefreshToken string `json:"refreshToken" bson:"refreshToken"`
 }
 
 type Session struct {

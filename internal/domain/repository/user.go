@@ -24,7 +24,7 @@ type UserRepository interface {
 	GetUserByVerificationCode(ctx context.Context, hash string) (model.User, error)
 	GetByForgotPasswordToken(ctx context.Context, token, tokenResult string) (model.User, error)
 	ChangeVerificationCode(ctx context.Context, email string, input model.UserVerificationPayload) error
-	Verify(ctx context.Context, verificationCode string) (string, error)
+	Verify(ctx context.Context, verificationCode string) error
 	GetByRefreshToken(ctx context.Context, refreshToken string) (model.User, error)
 	SetSession(ctx context.Context, userID string, session model.Session, lastVisitTime time.Time) error
 	IsDuplicate(ctx context.Context, email string) (bool, error)
