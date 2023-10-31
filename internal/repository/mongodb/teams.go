@@ -3,7 +3,6 @@ package mongodb
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -114,6 +113,29 @@ func (r *TeamsRepository) GetTeamsByIds(ctx context.Context, ids []string) ([]mo
 	return teams, nil
 }
 
+func (r *TeamsRepository) GetTeamByOwnerId(ctx context.Context, ownerId string) (model.Team, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var team model.Team
+
+	res := r.db.FindOne(nCtx, bson.M{"ownerID": ownerId})
+
+	err := res.Err()
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return team, apperrors.ErrDocumentNotFound
+		}
+		return team, err
+	}
+
+	if err := res.Decode(&team); err != nil {
+		return team, err
+	}
+	return team, nil
+}
+
 func (r *TeamsRepository) GetTeamByID(ctx context.Context, teamID string) (model.Team, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -138,6 +160,6 @@ func (r *TeamsRepository) GetTeamByID(ctx context.Context, teamID string) (model
 	if err := res.Decode(&team); err != nil {
 		return team, err
 	}
-	fmt.Println(team)
+
 	return team, nil
 }

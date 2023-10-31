@@ -3,14 +3,23 @@ package types
 import "time"
 
 type UserDTO struct {
-	FirstName      string    `json:"firstName"`
-	LastName       string    `json:"lastName"`
-	JobTitle       string    `json:"jobTitle"`
-	Email          string    `json:"email"`
-	Verification   bool      `json:"verification" bson:"verification"`
-	RegisteredTime time.Time `json:"registeredTime" bson:"registeredTime"`
-	LastVisitTime  time.Time `json:"lastVisitTime" bson:"lastVisitTime"`
-	Blocked        bool      `json:"blocked" bson:"blocked"`
+	FirstName      string       `json:"firstName"`
+	LastName       string       `json:"lastName"`
+	JobTitle       string       `json:"jobTitle"`
+	Email          string       `json:"email"`
+	Verification   bool         `json:"verification"`
+	RegisteredTime time.Time    `json:"registeredTime"`
+	LastVisitTime  time.Time    `json:"lastVisitTime"`
+	Blocked        bool         `json:"blocked"`
+	Settings       UserSettings `json:"settings"`
+}
+
+type UserSettings struct {
+	UserIconURL    string `json:"userIconUrl"`
+	BannerImageURL string `json:"bannerImageUrl"`
+	TimeZone       string `json:"timeZone"`
+	DateFormat     string `json:"dateFormat"`
+	TimeFormat     string `json:"timeFormat"`
 }
 
 type UserSignUpDTO struct {

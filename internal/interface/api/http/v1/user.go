@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -218,6 +219,34 @@ func (h *HandlerV1) signIn(c *gin.Context) {
 
 	c.SetCookie("refresh_token", tokens.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
 
+	team, err := h.service.TeamsService.GetTeamByOwnerId(c.Request.Context(), tokens.UserId)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	sessionData := teamSession{
+		TeamID: team.ID,
+		Roles:  []string{},
+	}
+
+	member, err := h.service.MemberService.GetMemberByTeamIdAndUserId(c.Request.Context(), team.ID, tokens.UserId)
+	if err != nil {
+		// if errors.Is(err, apperrors.ErrMemberNotFound) {
+		// 	newResponse(c, http.StatusNotFound, apperrors.ErrMemberNotFound.Error())
+		// 	return
+		// }
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	sessionData.Roles = member.Roles
+
+	sessionDataJson, err := json.Marshal(sessionData)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, "error: error marshal data to json")
+		return
+	}
+	c.SetCookie("team_session", string(sessionDataJson), 0, "/", "", false, true)
+
 	c.JSON(http.StatusOK, tokenResponse{
 		AccessToken:     tokens.AccessToken,
 		RefreshToken:    tokens.RefreshToken,
@@ -235,7 +264,6 @@ func (h *HandlerV1) userRefresh(c *gin.Context) {
 	}
 
 	res, err := h.service.UserService.RefreshTokens(c.Request.Context(), refreshToken)
-
 	if err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
 			logger.Errorf("user not found. err: %v", err)
@@ -248,6 +276,7 @@ func (h *HandlerV1) userRefresh(c *gin.Context) {
 		return
 	}
 	c.SetCookie("refresh_token", res.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
+
 	c.JSON(http.StatusOK, tokenResponse{
 		AccessToken:     res.AccessToken,
 		RefreshToken:    res.RefreshToken,
@@ -286,8 +315,8 @@ func (h *HandlerV1) userVerify(c *gin.Context) {
 		return
 	}
 	c.SetCookie("refresh_token", tokens.RefreshToken, int(h.refreshTokenTTL.Seconds()), "/", "", false, true)
-	fmt.Println(h.frontEndUrl)
-	c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("http://%s/create-team?access_token=%s/mattermost_token=%s", h.frontEndUrl, tokens.AccessToken, tokens.MattermostToken))
+
+	c.Redirect(http.StatusFound, fmt.Sprintf("http://%s/create-team?access_token=%s&mattermost_token=%s", h.frontEndUrl, tokens.AccessToken, tokens.MattermostToken))
 
 }
 

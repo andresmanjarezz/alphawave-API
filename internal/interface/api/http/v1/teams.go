@@ -19,6 +19,7 @@ func (h *HandlerV1) initTeamsRoutes(api *gin.RouterGroup) {
 		authenticated := teams.Group("/", h.userIdentity)
 		{
 			authenticated.POST("/create", h.createTeam)
+			authenticated.GET("/my-own", h.getTeamByOwnerId)
 			authenticated.GET("/set-session/:id", h.setSession)
 			authenticated.GET("/", h.getTeams)
 			teamSession := authenticated.Group("/", h.setTeamSessionFromCookie)
@@ -59,6 +60,13 @@ type teamSession struct {
 	Roles  []string
 }
 
+type getTeamResponse struct {
+	ID       string `json:"id"`
+	TeamName string `json:"teamName"`
+	JobTitle string `json:"jobTitle"`
+	OwnerID  string `json:"ownerID"`
+}
+
 type updatePermissionsInput struct {
 	Role        string            `json:"role"`
 	Permissions model.Permissions `jons:"permissions"`
@@ -92,6 +100,29 @@ func (h *HandlerV1) createTeam(c *gin.Context) {
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
+
+	sessionData := teamSession{
+		TeamID: teamId,
+		Roles:  []string{},
+	}
+
+	member, err := h.service.MemberService.GetMemberByTeamIdAndUserId(c.Request.Context(), teamId, userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrMemberNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrMemberNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	sessionData.Roles = member.Roles
+
+	sessionDataJson, err := json.Marshal(sessionData)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, "error: error marshal data to json")
+		return
+	}
+	c.SetCookie("team_session", string(sessionDataJson), 0, "/", "", false, true)
 
 	c.JSON(http.StatusCreated, createTeamResponse{
 		Id: teamId,
@@ -195,6 +226,30 @@ func (h *HandlerV1) updateSettings(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) getTeamByOwnerId(c *gin.Context) {
+	userId, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	team, err := h.service.TeamsService.GetTeamByOwnerId(c.Request.Context(), userId)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.JSON(http.StatusOK, getTeamResponse{
+		ID:       team.ID,
+		TeamName: team.TeamName,
+		JobTitle: team.JobTitle,
+		OwnerID:  team.OwnerID,
+	})
 }
 
 func (h *HandlerV1) getRoles(c *gin.Context) {

@@ -299,6 +299,7 @@ func (s *UserService) createSession(ctx context.Context, userID string) (types.T
 	err = s.repository.SetSession(ctx, userID, session, time.Now())
 
 	return types.Tokens{
+		UserId:          userID,
 		AccessToken:     tokens.AccessToken,
 		RefreshToken:    tokens.RefreshToken,
 		MattermostToken: token,

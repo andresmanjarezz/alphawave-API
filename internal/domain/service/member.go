@@ -117,9 +117,9 @@ func (s *MemberService) GetMembersByQuery(ctx context.Context, teamID string, qu
 	var membersOutput = []types.MemberDTO{}
 
 	for i := range members {
-		for j := range users {
+		var j int = 0
+		for j = range users {
 			if len(userIds) > 0 && users[j].ID == members[i].UserID {
-
 				membersOutput = append(membersOutput, types.MemberDTO{
 					MemberID:  members[i].ID,
 					FirstName: users[i].FirstName,
@@ -128,15 +128,17 @@ func (s *MemberService) GetMembersByQuery(ctx context.Context, teamID string, qu
 					Roles:     members[i].Roles,
 				})
 			}
-
 		}
-		membersOutput = append(membersOutput, types.MemberDTO{
-			MemberID:  members[i].ID,
-			FirstName: "",
-			LastName:  "",
-			Email:     members[i].Email,
-			Roles:     members[i].Roles,
-		})
+
+		if members[i].Status == USER_STATUS_PENDING || members[i].Status == USER_STATUS_INACTIVE {
+			membersOutput = append(membersOutput, types.MemberDTO{
+				MemberID:  members[i].ID,
+				FirstName: "",
+				LastName:  "",
+				Email:     members[i].Email,
+				Roles:     members[i].Roles,
+			})
+		}
 
 	}
 

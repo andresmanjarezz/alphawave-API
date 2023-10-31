@@ -99,6 +99,23 @@ func (s *TeamsService) GetTeamByID(ctx context.Context, teamID string) (model.Te
 	return s.repository.GetTeamByID(ctx, teamID)
 }
 
+func (s *TeamsService) GetTeamByOwnerId(ctx context.Context, ownerId string) (types.TeamsDTO, error) {
+	team, err := s.repository.GetTeamByOwnerId(ctx, ownerId)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return types.TeamsDTO{}, apperrors.ErrDocumentNotFound
+		}
+		return types.TeamsDTO{}, err
+	}
+	return types.TeamsDTO{
+		ID:         team.ID,
+		TeamName:   team.TeamName,
+		JobTitle:   team.JobTitle,
+		OwnerID:    team.OwnerID,
+		CustomerId: team.CustomerId,
+	}, nil
+}
+
 func (s *TeamsService) GetTeamsByUser(ctx context.Context, userID string) ([]model.Team, error) {
 	members, err := s.memberRepository.GetMembersByUserID(ctx, userID)
 

@@ -54,6 +54,7 @@ type MemberServiceI interface {
 type TeamsServiceI interface {
 	Create(ctx context.Context, userID string, input types.CreateTeamsDTO) (string, error)
 	GetTeamByID(ctx context.Context, teamID string) (model.Team, error)
+	GetTeamByOwnerId(ctx context.Context, ownerId string) (types.TeamsDTO, error)
 	GetTeamsByUser(ctx context.Context, userID string) ([]model.Team, error)
 	UpdateTeamSettings(ctx context.Context, teamID string, input types.UpdateTeamSettingsDTO) error
 }

@@ -14,6 +14,7 @@ func corsMiddleware(c *gin.Context) {
 	allowedOrigins := []string{
 		"https://alphawave.gasstrem.com",
 		"http://localhost:3000",
+		"http://localhost:7000",
 		"http://localhost:3001",
 		"http://127.0.0.1:5500",
 		"http://localhost",

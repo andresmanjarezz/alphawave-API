@@ -19,7 +19,7 @@ func (h *HandlerV1) initTasksRoutes(api *gin.RouterGroup) {
 		{
 			authenticated.POST("/create", h.createTask, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
 			authenticated.GET("/:id", h.getByIdTask)
-			authenticated.GET("/", h.getAllTasks)
+			authenticated.GET("", h.getAllTasks)
 			authenticated.POST("/change-status", h.changeStatus, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
 			authenticated.POST("/update", h.updateByIdTask, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
 			authenticated.DELETE("/:status", h.deleteAll, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))

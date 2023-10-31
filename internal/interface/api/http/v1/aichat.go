@@ -35,4 +35,5 @@ func (h *HandlerV1) newMessage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, message)
+
 }
