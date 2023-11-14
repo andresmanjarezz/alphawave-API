@@ -41,7 +41,6 @@ func (r *TeamsRepository) UpdateTeamSettings(ctx context.Context, teamID string,
 	if err != nil {
 		return err
 	}
-
 	if input.LogoURL != nil {
 		updateQuery["settings.logoUrl"] = *input.LogoURL
 	}

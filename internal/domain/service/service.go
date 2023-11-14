@@ -66,16 +66,20 @@ type RolesServiceI interface {
 }
 
 type TasksServiceI interface {
-	Create(ctx context.Context, userID string, input types.TasksCreateDTO) error
+	Create(ctx context.Context, userID string, input types.TasksCreateDTO) (string, error)
+	UpdatePosition(ctx context.Context, userId string, input []types.UpdatePositionDTO) error
 	GetById(ctx context.Context, userID, taskID string) (types.TaskDTO, error)
-	GetAll(ctx context.Context, userID string) ([]types.TaskDTO, error)
+	GetAll(ctx context.Context, userID string) (types.TasksDTO, error)
 	UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error)
-	ChangeStatus(ctx context.Context, userID, taskID, status string) error
-	DeleteAll(ctx context.Context, userID string, status string) error
+	FinishedTaskById(ctx context.Context, userID, taskID string) error
+	DeleteTaskById(ctx context.Context, userID, taskID string) error
+	DeleteAll(ctx context.Context, userID string) error
+	ClearAll(ctx context.Context, userID string) error
+	UndoTask(ctx context.Context, userID string, taskID string) error
 }
 
 type AiChatServiceI interface {
-	NewMessage(messages []types.Message) (types.Message, error)
+	NewMessage(messages []types.Message) (*types.MessageOutput, error)
 }
 
 type PackagesServiceI interface {

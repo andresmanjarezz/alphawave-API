@@ -175,6 +175,7 @@ func (s *UserService) GetUserById(ctx context.Context, userID string) (types.Use
 		RegisteredTime: res.RegisteredTime,
 		Verification:   res.Verification.Verified,
 		Blocked:        res.Blocked,
+		Settings:       types.UserSettings(res.Settings),
 	}
 
 	return user, nil

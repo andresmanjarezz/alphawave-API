@@ -6,5 +6,5 @@ type Task struct {
 	Title    string `json:"title" bson:"title"`
 	Status   string `json:"status" bson:"status"`
 	Priority string `json:"priority" bson:"priority"`
-	Order    int    `json:"order" bson:"order"`
+	Index    int    `json:"index" bson:"index"`
 }

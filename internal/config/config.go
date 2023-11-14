@@ -10,8 +10,8 @@ import (
 
 const (
 	defaultHTTPPort           = "8000"
-	defaultHTTPWriteTimeout   = 10 * time.Second
-	defaultHTTPReadTimeout    = 10 * time.Second
+	defaultHTTPWriteTimeout   = 100 * time.Second
+	defaultHTTPReadTimeout    = 100 * time.Second
 	defaultHTTPMaxHeaderBytes = 1
 
 	defaultAccessTokenTTL  = 10 * time.Minute

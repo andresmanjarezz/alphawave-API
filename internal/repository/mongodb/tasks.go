@@ -23,14 +23,38 @@ func NewTasksRepository(db *mongo.Database) *TasksRepository {
 	}
 }
 
-func (r *TasksRepository) CreateTask(ctx context.Context, input model.Task) error {
+func (r *TasksRepository) CreateTask(ctx context.Context, input model.Task) (string, error) {
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-
-	if _, err := r.db.InsertOne(nCtx, input); err != nil {
-		return err
+	res, err := r.db.InsertOne(nCtx, input)
+	if err != nil {
+		return "", err
 	}
 
+	return res.InsertedID.(primitive.ObjectID).Hex(), nil
+}
+
+func (r *TasksRepository) UpdatePosition(ctx context.Context, userId string, input []model.Task) error {
+	nCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	var bulkWriteOptions []mongo.WriteModel
+
+	for _, item := range input {
+		ObjectID, err := primitive.ObjectIDFromHex(item.ID)
+		if err != nil {
+			return err
+		}
+
+		updateDocument := mongo.NewUpdateOneModel().SetFilter(bson.M{"_id": ObjectID}).SetUpdate(bson.M{"$set": bson.M{"index": item.Index}})
+		bulkWriteOptions = append(bulkWriteOptions, updateDocument)
+	}
+
+	_, err := r.db.BulkWrite(nCtx, bulkWriteOptions)
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -145,9 +169,14 @@ func (r *TasksRepository) ChangeStatus(ctx context.Context, userID, taskID, stat
 
 	filter := bson.M{"_id": ObjectID, "userID": userID}
 
-	_, err = r.db.UpdateOne(nCtx, filter, bson.M{"$set": bson.M{"status": status}})
-
-	return err
+	res, err := r.db.UpdateOne(nCtx, filter, bson.M{"$set": bson.M{"status": status}})
+	if err != nil {
+		return err
+	}
+	if res.UpsertedCount <= 0 {
+		return apperrors.ErrDocumentNotFound
+	}
+	return nil
 }
 
 func (r *TasksRepository) DeleteAll(ctx context.Context, userID string, status string) error {

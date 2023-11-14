@@ -1,14 +1,10 @@
 package openai
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
+	"context"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
+	openai "github.com/sashabaranov/go-openai"
 )
 
 const GPT_MODEL = "gpt-3.5-turbo"
@@ -30,24 +26,21 @@ type Message struct {
 	Content string `json:"content"`
 }
 
-type messagesInput struct {
-	Model    string          `json:"model"`
-	Messages []types.Message `json:"messages"`
-}
-
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
 }
-
-type Response struct {
+type ResponseData struct {
 	Id      string `json:"id"`
 	Object  string `json:"object"`
 	Created int    `json:"created"`
 	// Model   string             `json:"model"`
 	Choices []messagesResponse `json:"choices"`
 	Usage   Usage              `json:"usage"`
+}
+type Response struct {
+	Data ResponseData `json:"data"`
 }
 
 type messagesResponse struct {
@@ -60,57 +53,72 @@ type OutputMessage struct {
 	Message Message
 }
 
-func (o *OpenAiAPI) NewMessage(messages []types.Message) (OutputMessage, error) {
-	client := &http.Client{}
+// func (o *OpenAiAPI) NewMessage(messages []types.Message) (OutputMessage, error) {
+// 	client := openai.NewClient(o.token)
 
-	input := messagesInput{
-		Model:    GPT_MODEL,
-		Messages: messages,
+// 	var reqMessages []openai.ChatCompletionMessage
+// 	reqMessages = append(reqMessages, openai.ChatCompletionMessage{
+// 		Role:    "system",
+// 		Content: "When someone says hello to you, you should say hello too. When they beat you up, tell them you're AlphaWave INC's artificial intelligence assistant.\nAnd ask me how I can help.",
+// 	})
+
+// 	for _, item := range messages {
+// 		reqMessages = append(reqMessages, openai.ChatCompletionMessage{
+// 			Role:    item.Role,
+// 			Content: item.Content,
+// 		})
+// 	}
+
+// 	resp, err := client.CreateChatCompletion(
+// 		context.Background(),
+// 		openai.ChatCompletionRequest{
+// 			Model:    openai.GPT3Dot5Turbo,
+// 			Messages: reqMessages,
+// 		},
+// 	)
+
+// 	if err != nil {
+// 		return OutputMessage{}, err
+// 	}
+
+// 	return OutputMessage{
+// 		Message: Message{
+// 			Role:    resp.Choices[0].Message.Role,
+// 			Content: resp.Choices[0].Message.Content,
+// 		},
+// 	}, nil
+// }
+
+func (o *OpenAiAPI) NewMessage(messages []types.Message) (*types.MessageOutput, error) {
+	client := openai.NewClient(o.token)
+
+	var reqMessages []openai.ChatCompletionMessage
+	reqMessages = append(reqMessages, openai.ChatCompletionMessage{
+		Role:    "system",
+		Content: "When someone says hello to you, you should say hello too. When they beat you up, tell them you're AlphaWave INC's artificial intelligence assistant.\nAnd ask me how I can help.",
+	})
+
+	for _, item := range messages {
+		reqMessages = append(reqMessages, openai.ChatCompletionMessage{
+			Role:    item.Role,
+			Content: item.Content,
+		})
 	}
 
-	inputBytes, err := json.Marshal(input)
+	req := openai.ChatCompletionRequest{
+		Model:    openai.GPT4,
+		Messages: reqMessages,
+		Stream:   true,
+	}
 
+	stream, err := client.CreateChatCompletionStream(context.Background(), req)
 	if err != nil {
-		return OutputMessage{}, err
+		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", o.url, bytes.NewBuffer(inputBytes))
+	return &types.MessageOutput{
+		Role:   "assistent",
+		Stream: *stream,
+	}, nil
 
-	if err != nil {
-		return OutputMessage{}, errors.New("error creating request")
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", o.token))
-	req.Header.Add("Content-Type", "application/json")
-	response, err := client.Do(req)
-
-	if err != nil {
-		return OutputMessage{}, errors.New("error response")
-	}
-
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		return OutputMessage{}, err
-	}
-
-	var output Response
-
-	err = json.Unmarshal(body, &output)
-
-	if err != nil {
-		return OutputMessage{}, err
-	}
-
-	var content OutputMessage
-
-	for _, messageItem := range output.Choices {
-		content = OutputMessage{
-			Message: messageItem.Message,
-		}
-	}
-
-	return content, nil
 }

@@ -20,18 +20,26 @@ func (h *HandlerV1) initTasksRoutes(api *gin.RouterGroup) {
 			authenticated.POST("/create", h.createTask, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
 			authenticated.GET("/:id", h.getByIdTask)
 			authenticated.GET("", h.getAllTasks)
-			authenticated.POST("/change-status", h.changeStatus, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
+			authenticated.POST("/delete/:id", h.deleteTask)
+			authenticated.POST("/finished/:id", h.finishedTask)
 			authenticated.POST("/update", h.updateByIdTask, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
-			authenticated.DELETE("/:status", h.deleteAll, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
+			authenticated.PUT("/update-position", h.updatePosition)
+			authenticated.DELETE("/delete", h.deleteAll, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
+			authenticated.DELETE("/clear", h.clearAll, h.checkRole(model.PERMISSION_ADD_NEW_TASKS))
+			authenticated.PUT("/undo/:id", h.undoTask)
+
 		}
 	}
 }
 
 type CreateTaskInput struct {
 	Title    string `json:"title"`
-	Status   string `json:"status"`
 	Priority string `json:"priority"`
-	Order    int    `json:"order"`
+	Index    int    `json:"index"`
+}
+
+type CreateTaskResponse struct {
+	Id string `json:"id"`
 }
 
 type UpdateTaskInput struct {
@@ -39,12 +47,7 @@ type UpdateTaskInput struct {
 	Title    string `json:"title"`
 	Status   string `json:"status"`
 	Priority string `json:"priority"`
-	Order    int    `json:"order"`
-}
-
-type ChangeStatusInput struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	Index    int    `json:"index"`
 }
 
 func (h *HandlerV1) createTask(c *gin.Context) {
@@ -59,11 +62,10 @@ func (h *HandlerV1) createTask(c *gin.Context) {
 		return
 	}
 
-	err = h.service.TasksService.Create(c.Request.Context(), userID, types.TasksCreateDTO{
+	id, err := h.service.TasksService.Create(c.Request.Context(), userID, types.TasksCreateDTO{
 		Title:    input.Title,
-		Status:   input.Status,
 		Priority: input.Priority,
-		Order:    input.Order,
+		Index:    input.Index,
 	})
 
 	if err != nil {
@@ -71,8 +73,28 @@ func (h *HandlerV1) createTask(c *gin.Context) {
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
-	c.Status(http.StatusCreated)
+	c.JSON(http.StatusCreated, CreateTaskResponse{Id: id})
 
+}
+
+func (h *HandlerV1) updatePosition(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	var input []types.UpdatePositionDTO
+	if err := c.BindJSON(&input); err != nil {
+		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+		return
+	}
+	err = h.service.TasksService.UpdatePosition(c.Request.Context(), userID, input)
+	if err != nil {
+		logger.Errorf("failed to update tasks position. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.Status(http.StatusOK)
 }
 
 func (h *HandlerV1) getByIdTask(c *gin.Context) {
@@ -139,7 +161,7 @@ func (h *HandlerV1) updateByIdTask(c *gin.Context) {
 		Title:    input.Title,
 		Status:   input.Status,
 		Priority: input.Priority,
-		Order:    input.Order,
+		Index:    input.Index,
 	})
 
 	if err != nil {
@@ -154,11 +176,10 @@ func (h *HandlerV1) updateByIdTask(c *gin.Context) {
 	c.JSON(http.StatusFound, res)
 }
 
-func (h *HandlerV1) changeStatus(c *gin.Context) {
-	var input ChangeStatusInput
-
-	if err := c.BindJSON(&input); err != nil {
-		newResponse(c, http.StatusBadRequest, fmt.Sprintf("Incorrect data format. err: %v", err))
+func (h *HandlerV1) deleteTask(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		newResponse(c, http.StatusBadRequest, "id is empty")
 		return
 	}
 
@@ -168,7 +189,31 @@ func (h *HandlerV1) changeStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.TasksService.ChangeStatus(c.Request.Context(), userID, input.ID, input.Status); err != nil {
+	if err := h.service.TasksService.DeleteTaskById(c.Request.Context(), userID, id); err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) finishedTask(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		newResponse(c, http.StatusBadRequest, "id is empty")
+		return
+	}
+
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	if err := h.service.TasksService.FinishedTaskById(c.Request.Context(), userID, id); err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
 			return
@@ -185,18 +230,57 @@ func (h *HandlerV1) deleteAll(c *gin.Context) {
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
-	status := c.Param("status")
-	if status == "" {
-		newResponse(c, http.StatusBadRequest, "status is empty")
-		return
-	}
 
-	err = h.service.TasksService.DeleteAll(c.Request.Context(), userID, status)
+	err = h.service.TasksService.DeleteAll(c.Request.Context(), userID)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
 			return
 		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) clearAll(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	err = h.service.TasksService.ClearAll(c.Request.Context(), userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) undoTask(c *gin.Context) {
+	userID, err := getUserId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	id := c.Param("id")
+	if id == "" {
+		newResponse(c, http.StatusBadRequest, "id is empty")
+		return
+	}
+	if err := h.service.TasksService.UndoTask(c.Request.Context(), userID, id); err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		logger.Errorf("failed to undo task. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}

@@ -270,7 +270,7 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, userID string, inpu
 	updateQuery := bson.M{}
 
 	if input.FirstName != nil {
-		updateQuery["firstName"] = input.FirstName
+		updateQuery["firstName"] = *input.FirstName
 	}
 	if input.LastName != nil {
 		updateQuery["lastName"] = input.LastName
@@ -281,7 +281,12 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, userID string, inpu
 	if input.Email != nil {
 		updateQuery["email"] = input.Email
 	}
-	_, err := r.db.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": updateQuery})
+	ObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.UpdateOne(ctx, bson.M{"_id": ObjectID}, bson.M{"$set": updateQuery})
 	return err
 }
 
@@ -303,7 +308,12 @@ func (r *UserRepository) UpdateUserSettings(ctx context.Context, userID string, 
 	if input.TimeFormat != nil {
 		updateQuery["settings.timeFormat"] = input.TimeFormat
 	}
-	_, err := r.db.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": updateQuery})
+	ObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.UpdateOne(ctx, bson.M{"_id": ObjectID}, bson.M{"$set": updateQuery})
 	return err
 }
 
@@ -360,7 +370,11 @@ func (r *UserRepository) RemoveSession(ctx context.Context, userID string) error
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	res, err := r.db.UpdateOne(nCtx, bson.M{"id": userID}, bson.M{"$unset": bson.M{"session": ""}})
+	ObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return err
+	}
+	res, err := r.db.UpdateOne(nCtx, bson.M{"_id": ObjectID}, bson.M{"$unset": bson.M{"session": ""}})
 
 	if err != nil {
 		return err

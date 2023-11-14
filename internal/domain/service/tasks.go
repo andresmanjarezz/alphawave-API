@@ -26,20 +26,32 @@ const (
 	STATUS_ACTIVE string = "active"
 )
 
-func (s *TasksService) Create(ctx context.Context, userID string, input types.TasksCreateDTO) error {
-	stats, err := checkStatus(input.Status)
-	if err != nil {
-		return err
-	}
+func (s *TasksService) Create(ctx context.Context, userID string, input types.TasksCreateDTO) (string, error) {
 
 	task := model.Task{
 		UserID:   userID,
 		Title:    input.Title,
-		Status:   stats,
+		Status:   STATUS_ACTIVE,
 		Priority: input.Priority,
-		Order:    input.Order,
+		Index:    input.Index,
 	}
-	err = s.repository.CreateTask(ctx, task)
+	id, err := s.repository.CreateTask(ctx, task)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+func (s *TasksService) UpdatePosition(ctx context.Context, userId string, input []types.UpdatePositionDTO) error {
+	var tasks []model.Task
+
+	for i, item := range input {
+		tasks = append(tasks, model.Task{
+			ID:    item.Id,
+			Index: i,
+		})
+	}
+	err := s.repository.UpdatePosition(ctx, userId, tasks)
 	if err != nil {
 		return err
 	}
@@ -58,49 +70,56 @@ func (s *TasksService) GetById(ctx context.Context, userID, taskID string) (type
 	return types.TaskDTO{
 		ID:       task.ID,
 		Title:    task.Title,
-		Status:   task.Status,
 		Priority: task.Priority,
-		Order:    task.Order,
+		Index:    task.Index,
 	}, nil
 }
 
-func (s *TasksService) GetAll(ctx context.Context, userID string) ([]types.TaskDTO, error) {
+func (s *TasksService) GetAll(ctx context.Context, userID string) (types.TasksDTO, error) {
 	tasksIn, err := s.repository.GetAll(ctx, userID)
 
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
-			return []types.TaskDTO{}, err
+			return types.TasksDTO{}, err
 		}
-		return []types.TaskDTO{}, err
+		return types.TasksDTO{}, err
 	}
 
-	tasks := make([]types.TaskDTO, len(tasksIn))
+	tasks := types.TasksDTO{
+		ActiveTasks:   []types.TaskDTO{},
+		FinishedTasks: []types.TaskDTO{},
+		DeletedTasks:  []types.TaskDTO{},
+	}
 
 	for i := range tasksIn {
-		tasks[i] = types.TaskDTO{
+		task := types.TaskDTO{
 			ID:       tasksIn[i].ID,
 			Title:    tasksIn[i].Title,
-			Status:   tasksIn[i].Status,
 			Priority: tasksIn[i].Priority,
-			Order:    tasksIn[i].Order,
+			Index:    tasksIn[i].Index,
 		}
+		if tasksIn[i].Status == STATUS_ACTIVE {
+			tasks.ActiveTasks = append(tasks.ActiveTasks, task)
+		}
+		if tasksIn[i].Status == STATUS_DONE {
+			tasks.FinishedTasks = append(tasks.FinishedTasks, task)
+		}
+		if tasksIn[i].Status == STATUS_DELITE {
+			tasks.DeletedTasks = append(tasks.DeletedTasks, task)
+		}
+
 	}
 
 	return tasks, nil
 }
 
 func (s *TasksService) UpdateById(ctx context.Context, userID string, input types.UpdateTaskDTO) (types.TaskDTO, error) {
-	stats, err := checkStatus(input.Status)
-	if err != nil {
-		return types.TaskDTO{}, err
-	}
 
 	task, err := s.repository.UpdateById(ctx, userID, model.Task{
 		ID:       input.ID,
 		Title:    input.Title,
 		Priority: input.Priority,
-		Status:   stats,
-		Order:    input.Order,
+		Index:    input.Index,
 	})
 
 	if err != nil {
@@ -113,18 +132,12 @@ func (s *TasksService) UpdateById(ctx context.Context, userID string, input type
 		ID:       task.ID,
 		Title:    task.Title,
 		Priority: task.Priority,
-		Status:   stats,
-		Order:    task.Order,
+		Index:    task.Index,
 	}, err
 }
 
-func (s *TasksService) ChangeStatus(ctx context.Context, userID, taskID, status string) error {
-	stats, err := checkStatus(status)
-	if err != nil {
-		return err
-	}
-
-	err = s.repository.ChangeStatus(ctx, userID, taskID, stats)
+func (s *TasksService) DeleteTaskById(ctx context.Context, userID, taskID string) error {
+	err := s.repository.ChangeStatus(ctx, userID, taskID, STATUS_DELITE)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			return apperrors.ErrDocumentNotFound
@@ -134,12 +147,8 @@ func (s *TasksService) ChangeStatus(ctx context.Context, userID, taskID, status 
 	return nil
 }
 
-func (s *TasksService) DeleteAll(ctx context.Context, userID string, status string) error {
-	stats, err := checkStatus(status)
-	if err != nil {
-		return err
-	}
-	err = s.repository.DeleteAll(ctx, userID, stats)
+func (s *TasksService) FinishedTaskById(ctx context.Context, userID, taskID string) error {
+	err := s.repository.ChangeStatus(ctx, userID, taskID, STATUS_DONE)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			return apperrors.ErrDocumentNotFound
@@ -149,17 +158,37 @@ func (s *TasksService) DeleteAll(ctx context.Context, userID string, status stri
 	return nil
 }
 
-func checkStatus(input string) (string, error) {
-	var status string
-	switch input {
-	case STATUS_ACTIVE:
-		status = STATUS_ACTIVE
-	case STATUS_DELITE:
-		status = STATUS_DELITE
-	case STATUS_DONE:
-		status = STATUS_DONE
-	default:
-		return status, errors.New("incorrect status")
+func (s *TasksService) DeleteAll(ctx context.Context, userID string) error {
+	err := s.repository.DeleteAll(ctx, userID, STATUS_DELITE)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return apperrors.ErrDocumentNotFound
+		}
+		return err
 	}
-	return status, nil
+	return nil
+}
+
+func (s *TasksService) ClearAll(ctx context.Context, userID string) error {
+
+	err := s.repository.DeleteAll(ctx, userID, STATUS_DONE)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return apperrors.ErrDocumentNotFound
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *TasksService) UndoTask(ctx context.Context, userID string, taskID string) error {
+	err := s.repository.ChangeStatus(ctx, userID, taskID, STATUS_ACTIVE)
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			return apperrors.ErrDocumentNotFound
+		}
+		return err
+	}
+	return nil
 }

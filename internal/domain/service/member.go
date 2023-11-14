@@ -269,3 +269,5 @@ func (s *MemberService) SetUserID(ctx context.Context, memberID string, userID s
 
 // 	member := s.repository.GetMemberByTeamIdAndUserId()
 // }
+
+

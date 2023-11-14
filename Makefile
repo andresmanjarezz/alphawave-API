@@ -13,6 +13,3 @@ stop:
 
 lint: 
 	golangci-lint run
-
-
- 
