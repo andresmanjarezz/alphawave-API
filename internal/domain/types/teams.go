@@ -23,6 +23,7 @@ type MemberDTO struct {
 	Email         string    `json:"email"`
 	LastVisitTime time.Time `json:"lastVisitTime"`
 	Roles         []string  `json:"roles"`
+	Status        string    `json:"status"`
 }
 
 type UpdateTeamSettingsDTO struct {

@@ -126,6 +126,7 @@ func (s *MemberService) GetMembersByQuery(ctx context.Context, teamID string, qu
 					LastName:  users[i].LastName,
 					Email:     users[i].Email,
 					Roles:     members[i].Roles,
+					Status:    members[i].Status,
 				})
 			}
 		}
@@ -137,6 +138,7 @@ func (s *MemberService) GetMembersByQuery(ctx context.Context, teamID string, qu
 				LastName:  "",
 				Email:     members[i].Email,
 				Roles:     members[i].Roles,
+				Status:    members[i].Status,
 			})
 		}
 
@@ -269,5 +271,3 @@ func (s *MemberService) SetUserID(ctx context.Context, memberID string, userID s
 
 // 	member := s.repository.GetMemberByTeamIdAndUserId()
 // }
-
-
