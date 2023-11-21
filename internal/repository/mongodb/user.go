@@ -300,7 +300,7 @@ func (r *UserRepository) UpdateUserSettings(ctx context.Context, userID string, 
 		updateQuery["settings.bannerImageUrl"] = input.BannerImageURL
 	}
 	if input.TimeZone != nil {
-		updateQuery["settings.timeZone"] = input.TimeFormat
+		updateQuery["settings.timeZone"] = input.TimeZone
 	}
 	if input.DateFormat != nil {
 		updateQuery["settings.dateFormat"] = input.DateFormat
