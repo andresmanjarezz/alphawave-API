@@ -12,6 +12,7 @@ import (
 )
 
 type Client struct {
+	EndpointURL string
 	minioClient *minio.Client
 }
 
@@ -25,6 +26,7 @@ func NewClient(endpoint, accessKeyID, secretAccessKey string) (*Client, error) {
 	}
 
 	return &Client{
+		EndpointURL: endpoint,
 		minioClient: minioClient,
 	}, nil
 }
@@ -102,27 +104,6 @@ func (c *Client) UploadFile(ctx context.Context, bucketName, objectName, fileNam
 		})
 	if err != nil {
 		return fmt.Errorf("failed to upload file. err: %w", err)
-	}
-	return nil
-}
-
-func (c *Client) CreateFolder(ctx context.Context, bucketName, objectName string) error {
-	nCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	exists, errBucketExists := c.minioClient.BucketExists(ctx, bucketName)
-
-	if errBucketExists != nil || !exists {
-		err := c.minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to create new bucket. err: %w", err)
-		}
-	}
-
-	_, err := c.minioClient.PutObject(nCtx, bucketName, objectName, nil, 0, minio.PutObjectOptions{})
-
-	if err != nil {
-		return fmt.Errorf("failed to create folder. err: %w", err)
 	}
 	return nil
 }

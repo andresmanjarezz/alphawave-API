@@ -24,6 +24,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/paymants"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/storage"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/tokengenerator"
 )
 
@@ -60,7 +61,7 @@ func Run() {
 
 	openAI := openai.NewOpenAiAPI(cfg.OpenAI.Token, cfg.OpenAI.Url)
 
-	// storageProvider, err := storage.NewClient(cfg.MinIO.Endpoint, cfg.MinIO.AccessKeyID, cfg.MinIO.SecretAccessKey)
+	storageProvider, err := storage.NewClient(cfg.MinIO.Endpoint, cfg.MinIO.AccessKeyID, cfg.MinIO.SecretAccessKey)
 
 	if err != nil {
 		logger.Error(err)
@@ -94,8 +95,10 @@ func Run() {
 		MemberRepository:       repository.Members,
 		PackagesRepository:     repository.Packages,
 		FilesRepository:        repository.Files,
+		FolderRepository:       repository.Folder,
 		SubscriptionRepository: repository.Subscription,
-		// StorageProvider:        storageProvider,
+		StorageProvider:        storageProvider,
+		StorageEndpointURL:     cfg.MinIO.Endpoint,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
 		AccessTokenTTL:         cfg.Auth.JWT.AccessTokenTTL,

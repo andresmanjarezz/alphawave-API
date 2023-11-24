@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"strconv"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
@@ -26,8 +25,8 @@ const (
 // }
 
 type CreateFolderInput struct {
-	Name     string `json:"name"`
-	Location string `json:"location"`
+	Name         string `json:"name"`
+	ParentFolder string `json:"parentFolder"`
 }
 
 type FileMetadataResponse struct {
@@ -46,10 +45,14 @@ func (h *HandlerV1) initFilesRoutes(api *gin.RouterGroup) {
 			teamSession := authenticated.Group("/", h.setTeamSessionFromCookie)
 			{
 				teamSession.GET("/url/:id", h.getFilePresignedURL)
-				teamSession.GET("/:id", h.getFile)
-				teamSession.POST("/", h.createFile)
-				teamSession.POST("/folder", h.createFolder)
 				teamSession.DELETE("/:id", h.deleteFile)
+				teamSession.POST("", h.createFile)
+				folders := teamSession.Group("/folders")
+				{
+					folders.GET("/root", h.getRootFolder)
+					folders.POST("", h.createFolder)
+					folders.GET("/:id", h.getFolderContent)
+				}
 			}
 		}
 
@@ -66,16 +69,24 @@ func (h *HandlerV1) createFile(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
+	userID, err := getUserId(c)
+	if err != nil {
+		logger.Errorf("failed to get team user id. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	tempFile, err := c.FormFile("file")
+
 	if err != nil {
 		logger.Error(err)
 		newResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	folder := c.PostForm("folder")
+	fileName := c.PostForm("fileName")
 
-	location := c.PostForm("location")
-
-	fileReader, err := file.Open()
+	fileReader, err := tempFile.Open()
 
 	if err != nil {
 		logger.Error(err)
@@ -95,22 +106,23 @@ func (h *HandlerV1) createFile(c *gin.Context) {
 
 	reader := bytes.NewReader(fileData)
 
-	fileName := filepath.Ext(file.Filename)
-
-	if err := h.service.FilesService.Create(c.Request.Context(), reader, types.CreateFileDTO{
+	file, err := h.service.FilesService.Create(c.Request.Context(), reader, types.CreateFileDTO{
 		TeamID:    teamID,
+		UserID:    userID,
 		FileName:  fileName,
-		Location:  location,
-		Extension: filepath.Ext(file.Filename),
+		Type:      filepath.Ext(tempFile.Filename),
+		Extension: filepath.Ext(tempFile.Filename),
 		Size:      len(fileData),
-	}); err != nil {
+		Folder:    folder,
+	})
 
+	if err != nil {
 		logger.Errorf("failed to upload file. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, fmt.Errorf("failed to upload file").Error())
 		return
 	}
 
-	c.Status(http.StatusCreated)
+	c.JSON(http.StatusCreated, file)
 
 }
 
@@ -130,16 +142,17 @@ func (h *HandlerV1) createFolder(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.FilesService.CreateFolder(c.Request.Context(), types.CreateFolderDTO{
-		TeamID:     teamID,
-		FolderName: input.Name,
-		Location:   input.Location,
-	}); err != nil {
+	folder, err := h.service.FilesService.CreateFolder(c.Request.Context(), types.CreateFolderDTO{
+		TeamID:         teamID,
+		FolderName:     input.Name,
+		ParentFolderId: input.ParentFolder,
+	})
+	if err != nil {
 		logger.Errorf("failed to create folder. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, fmt.Errorf("failed to create folder. folder name: %s", input.Name).Error())
 		return
 	}
-	c.JSON(http.StatusCreated, fmt.Sprintf("%s/%s", input.Location, input.Name))
+	c.JSON(http.StatusCreated, folder)
 }
 
 func (h *HandlerV1) getFilePresignedURL(c *gin.Context) {
@@ -149,6 +162,7 @@ func (h *HandlerV1) getFilePresignedURL(c *gin.Context) {
 		newResponse(c, http.StatusBadRequest, "id is empty")
 		return
 	}
+
 	teamID, err := getTeamId(c)
 	if err != nil {
 		logger.Errorf("failed to get team id. err: %v", err)
@@ -171,60 +185,55 @@ func (h *HandlerV1) getFilePresignedURL(c *gin.Context) {
 	c.JSON(http.StatusOK, fmt.Sprintf("https://%s", url))
 }
 
-func (h *HandlerV1) getFile(c *gin.Context) {
+func (h *HandlerV1) getFolderContent(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		logger.Warnf("failed to get file id. file id is empty")
 		newResponse(c, http.StatusBadRequest, "id is empty")
 		return
 	}
+
 	teamID, err := getTeamId(c)
 	if err != nil {
-		logger.Errorf("failed to get team id for get file. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
+	content, err := h.service.FilesService.GetFolderContent(c.Request.Context(), teamID, id)
 
-	file, err := h.service.FilesService.GetFile(c.Request.Context(), teamID, id)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
-			logger.Warnf("failed to get file. err: %v", err)
+			logger.Warnf("failed to get folder content. err: %v", err)
 			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
 			return
 		}
-		logger.Errorf("failed to get file. err: %v", err)
+		logger.Errorf("failed to get folder content. err: %v", err)
 		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
 		return
 	}
-
-	c.Header("Content-Type", "application/octet-stream")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s; fileID=%s", file.Name, file.ID))
-	c.Header("Content-Length", strconv.FormatInt(int64(file.Size), 10))
-
-	c.Data(http.StatusOK, "application/octet-stream", *file.File)
+	c.JSON(http.StatusOK, content)
 }
 
-// func (h *HandlerV1) getFolderContent(c *gin.Context) {
+func (h *HandlerV1) getRootFolder(c *gin.Context) {
+	teamID, err := getTeamId(c)
+	if err != nil {
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	folder, err := h.service.FilesService.GetFolderRoot(c.Request.Context(), teamID)
 
-// 	objectName := c.Param("object")
-
-// 	if objectName == "" {
-// 		newResponse(c, http.StatusBadRequest, "object name is empty")
-// 		return
-// 	}
-
-// 	var prefix string
-
-// 	if objectName == "" {
-// 		prefix = ""
-// 	} else {
-// 		prefix = fmt.Sprintf("%s/", objectName)
-// 	}
-
-// }
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			logger.Warnf("failed to get folder content. err: %v", err)
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		logger.Errorf("failed to get folder content. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.JSON(http.StatusOK, folder)
+}
 
 func (h *HandlerV1) deleteFile(c *gin.Context) {
-
 	id := c.Param("id")
 	if id == "" {
 		newResponse(c, http.StatusBadRequest, "id is empty")
@@ -238,7 +247,6 @@ func (h *HandlerV1) deleteFile(c *gin.Context) {
 	}
 
 	if err := h.service.FilesService.Delete(c.Request.Context(), teamID, id); err != nil {
-
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			logger.Warnf("failed to delete file. err: %v", err)
 			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
@@ -250,5 +258,4 @@ func (h *HandlerV1) deleteFile(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
-
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -19,6 +20,7 @@ import (
 type UserService struct {
 	hasher                 *hash.Hasher
 	repository             repository.UserRepository
+	filesService           FilesServiceI
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
 	RefreshTokenTTL        time.Duration
@@ -30,10 +32,11 @@ type UserService struct {
 	mattermostAdapter      MattermostAdapter
 }
 
-func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, JWTManager *manager.JWTManager, accessTokenTTL time.Duration, refreshTokenTTL time.Duration, verificationCodeTTL time.Duration, codeGenerator *codegenerator.CodeGenerator, emailService *EmailService, mattermostAdapter MattermostAdapter, verificationCodeLength int, apiUrl string) *UserService {
+func NewUserService(hasher *hash.Hasher, repository repository.UserRepository, filesService FilesServiceI, JWTManager *manager.JWTManager, accessTokenTTL time.Duration, refreshTokenTTL time.Duration, verificationCodeTTL time.Duration, codeGenerator *codegenerator.CodeGenerator, emailService *EmailService, mattermostAdapter MattermostAdapter, verificationCodeLength int, apiUrl string) *UserService {
 	return &UserService{
 		hasher:                 hasher,
 		repository:             repository,
+		filesService:           filesService,
 		JWTManager:             JWTManager,
 		AccessTokenTTL:         accessTokenTTL,
 		RefreshTokenTTL:        refreshTokenTTL,
@@ -175,7 +178,19 @@ func (s *UserService) GetUserById(ctx context.Context, userID string) (types.Use
 		RegisteredTime: res.RegisteredTime,
 		Verification:   res.Verification.Verified,
 		Blocked:        res.Blocked,
-		Settings:       types.UserSettings(res.Settings),
+		Settings: types.UserSettings{
+			UserIcon: types.UserImageDTO{
+				Url:              res.Settings.UserIcon.Url,
+				LastModifiedTime: res.Settings.UserIcon.LastModifiedTime,
+			},
+			BannerImage: types.UserImageDTO{
+				Url:              res.Settings.BannerImage.Url,
+				LastModifiedTime: res.Settings.BannerImage.LastModifiedTime,
+			},
+			TimeZone:   res.Settings.TimeZone,
+			DateFormat: res.Settings.DateFormat,
+			TimeFormat: res.Settings.TimeFormat,
+		},
 	}
 
 	return user, nil
@@ -189,7 +204,7 @@ func (s *UserService) Verify(ctx context.Context, verificationCode string) (type
 		}
 		return types.Tokens{}, err
 	}
-	if user.Verification.Verified == true {
+	if user.Verification.Verified {
 		return types.Tokens{}, apperrors.ErrUserAlreadyVerifyed
 	}
 	if user.Verification.VerificationCode != verificationCode {
@@ -436,11 +451,19 @@ func (s *UserService) UpdateUserInfo(ctx context.Context, userID string, input t
 
 func (s *UserService) UpdateUserSettings(ctx context.Context, userID string, input types.UpdateUserSettingsDTO) error {
 	if err := s.repository.UpdateUserSettings(ctx, userID, model.UpdateUserSettingsInput{
-		UserIconURL:    input.UserIconURL,
-		BannerImageURL: input.BannerImageURL,
-		TimeZone:       input.TimeZone,
-		DateFormat:     input.DateFormat,
-		TimeFormat:     input.TimeFormat,
+		UserIcon: &model.UserImage{
+			Url:              input.UserIcon.Url,
+			Path:             input.UserIcon.Path,
+			LastModifiedTime: time.Now(),
+		},
+		BannerImage: &model.UserImage{
+			Url:              input.BannerImage.Url,
+			Path:             input.BannerImage.Path,
+			LastModifiedTime: time.Now(),
+		},
+		TimeZone:   input.TimeZone,
+		DateFormat: input.DateFormat,
+		TimeFormat: input.TimeFormat,
 	}); err != nil {
 		if errors.Is(err, apperrors.ErrUserNotFound) {
 			return apperrors.ErrUserNotFound
@@ -448,4 +471,70 @@ func (s *UserService) UpdateUserSettings(ctx context.Context, userID string, inp
 		return err
 	}
 	return nil
+}
+
+func (s *UserService) UploadUserAvatar(ctx context.Context, userID string, reader io.Reader, extension string, fileName string, size int) (string, error) {
+	user, err := s.repository.GetUserById(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+
+	if user.Settings.UserIcon.SetUp {
+		err := s.filesService.DeleteImage(ctx, user.Settings.UserIcon.Path)
+		if err != nil {
+			return "", err
+		}
+	}
+	image, err := s.filesService.UploadImage(ctx, reader, types.UploadImageDTO{
+		FileName:  fileName,
+		Extension: extension,
+		Size:      size,
+	})
+	if err != nil {
+		return "", err
+	}
+	if err = s.repository.UpdateUserSettings(ctx, userID, model.UpdateUserSettingsInput{
+		UserIcon: &model.UserImage{
+			Url:              image.Url,
+			Path:             image.Path,
+			LastModifiedTime: time.Now(),
+			SetUp:            true,
+		},
+	}); err != nil {
+		return "", err
+	}
+	return image.Url, nil
+}
+
+func (s *UserService) UploadUserBanner(ctx context.Context, userID string, reader io.Reader, extension string, fileName string, size int) (string, error) {
+	user, err := s.repository.GetUserById(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+
+	if user.Settings.BannerImage.SetUp {
+		err := s.filesService.DeleteImage(ctx, user.Settings.BannerImage.Path)
+		if err != nil {
+			return "", err
+		}
+	}
+	image, err := s.filesService.UploadImage(ctx, reader, types.UploadImageDTO{
+		FileName:  fileName,
+		Extension: extension,
+		Size:      size,
+	})
+	if err != nil {
+		return "", err
+	}
+	if err = s.repository.UpdateUserSettings(ctx, userID, model.UpdateUserSettingsInput{
+		BannerImage: &model.UserImage{
+			Url:              image.Url,
+			Path:             image.Path,
+			LastModifiedTime: time.Now(),
+			SetUp:            true,
+		},
+	}); err != nil {
+		return "", err
+	}
+	return image.Url, nil
 }

@@ -64,6 +64,33 @@ func (r *FilesRepository) GetFileById(ctx context.Context, teamID, fileID string
 
 }
 
+func (r *FilesRepository) GetFilesByFolderId(ctx context.Context, teamId, folderId string) ([]model.File, error) {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var files []model.File
+
+	cur, err := r.db.Find(nCtx, bson.M{"teamId": teamId, "folderId": folderId})
+
+	if err != nil {
+		return []model.File{}, err
+	}
+
+	err = cur.Err()
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return []model.File{}, apperrors.ErrDocumentNotFound
+		}
+		return []model.File{}, err
+	}
+
+	if err := cur.All(nCtx, &files); err != nil {
+		return []model.File{}, err
+	}
+
+	return files, nil
+}
+
 func (r *FilesRepository) Delete(ctx context.Context, teamID, fileID string) error {
 	nCtx, cancel := context.WithTimeout(ctx, 50*time.Second)
 	defer cancel()

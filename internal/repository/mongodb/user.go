@@ -293,11 +293,11 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, userID string, inpu
 func (r *UserRepository) UpdateUserSettings(ctx context.Context, userID string, input model.UpdateUserSettingsInput) error {
 	updateQuery := bson.M{}
 
-	if input.UserIconURL != nil {
-		updateQuery["settings.userIconUrl"] = input.UserIconURL
+	if input.UserIcon != nil {
+		updateQuery["settings.userIcon"] = input.UserIcon
 	}
-	if input.BannerImageURL != nil {
-		updateQuery["settings.bannerImageUrl"] = input.BannerImageURL
+	if input.BannerImage != nil {
+		updateQuery["settings.bannerImage"] = input.BannerImage
 	}
 	if input.TimeZone != nil {
 		updateQuery["settings.timeZone"] = input.TimeZone

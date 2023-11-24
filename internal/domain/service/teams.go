@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/model"
@@ -14,16 +13,18 @@ import (
 type TeamsService struct {
 	repository       repository.TeamsRepository
 	userRepository   repository.UserRepository
+	filesService     FilesServiceI
 	memberRepository repository.MemberRepository
 	paymentService   PaymentServiceI
 	rolesService     RolesService
 }
 
-func NewTeamsService(repository repository.TeamsRepository, userRepository repository.UserRepository, memberRepository repository.MemberRepository, paymentService PaymentServiceI, rolesService RolesService) *TeamsService {
+func NewTeamsService(repository repository.TeamsRepository, userRepository repository.UserRepository, memberRepository repository.MemberRepository, paymentService PaymentServiceI, rolesService RolesService, filesService FilesServiceI) *TeamsService {
 	return &TeamsService{
 		repository:       repository,
 		userRepository:   userRepository,
 		memberRepository: memberRepository,
+		filesService:     filesService,
 		rolesService:     rolesService,
 		paymentService:   paymentService,
 	}
@@ -53,6 +54,10 @@ func (s *TeamsService) Create(ctx context.Context, userID string, input types.Cr
 	}
 	err = s.rolesService.Create(ctx, id)
 	if err != nil {
+		return "", err
+	}
+
+	if err := s.filesService.CreateRootFolder(ctx, id); err != nil {
 		return "", err
 	}
 
@@ -95,8 +100,13 @@ func (s *TeamsService) UpdateTeamSettings(ctx context.Context, teamID string, in
 	return nil
 }
 
-func (s *TeamsService) GetTeamByID(ctx context.Context, teamID string) (model.Team, error) {
-	return s.repository.GetTeamByID(ctx, teamID)
+func (s *TeamsService) GetTeamByID(ctx context.Context, userID, teamID string) (model.Team, error) {
+	member, err := s.memberRepository.GetMemberByTeamIdAndUserId(ctx, teamID, userID)
+	if err != nil {
+		return model.Team{}, err
+	}
+
+	return s.repository.GetTeamByID(ctx, member.TeamID)
 }
 
 func (s *TeamsService) GetTeamByOwnerId(ctx context.Context, ownerId string) (types.TeamsDTO, error) {
@@ -124,14 +134,11 @@ func (s *TeamsService) GetTeamsByUser(ctx context.Context, userID string) ([]mod
 	}
 
 	teamsIds := make([]string, 0, len(members))
-	fmt.Printf("members: %v", members)
 	for _, member := range members {
-		fmt.Printf("teamID: %s", member.TeamID)
 		teamsIds = append(teamsIds, member.TeamID)
 	}
 
 	teams, err := s.repository.GetTeamsByIds(ctx, teamsIds)
-
 	if err != nil {
 		return []model.Team{}, err
 	}

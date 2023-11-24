@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"path/filepath"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
 	"github.com/Coke15/AlphaWave-BackEnd/internal/domain/types"
@@ -29,6 +32,8 @@ func (h *HandlerV1) initUserRoutes(api *gin.RouterGroup) {
 			authenticated.POST("/change-password", h.changePassword)
 			authenticated.PUT("/", h.updateUserInfo)
 			authenticated.PUT("/settings", h.updateUserSettings)
+			authenticated.POST("/avatar", h.uploadUserAvatar)
+			authenticated.POST("/banner", h.uploadUserBanner)
 			authenticated.POST("/logout", h.logOut)
 		}
 	}
@@ -499,4 +504,110 @@ func (h *HandlerV1) logOut(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+
+func (h *HandlerV1) uploadUserAvatar(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
+
+	userID, err := getUserId(c)
+	if err != nil {
+		logger.Errorf("failed to get user id. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	tempFile, err := c.FormFile("file")
+
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	fileName := c.PostForm("fileName")
+
+	fileReader, err := tempFile.Open()
+
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusBadRequest, fmt.Errorf("failed to open file").Error())
+		return
+	}
+
+	defer fileReader.Close()
+
+	fileData, err := ioutil.ReadAll(fileReader)
+
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	reader := bytes.NewReader(fileData)
+
+	url, err := h.service.UserService.UploadUserAvatar(c.Request.Context(), userID, reader, filepath.Ext(tempFile.Filename), fileName, len(fileData))
+	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidFileType) {
+			newResponse(c, http.StatusBadRequest, apperrors.ErrInvalidFileType.Error())
+			return
+		}
+		logger.Errorf("failed to upload file. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, fmt.Errorf("failed to upload file").Error())
+		return
+	}
+
+	c.JSON(http.StatusCreated, url)
+}
+
+func (h *HandlerV1) uploadUserBanner(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
+
+	userID, err := getUserId(c)
+	if err != nil {
+		logger.Errorf("failed to get user id. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	tempFile, err := c.FormFile("file")
+
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	fileName := c.PostForm("fileName")
+
+	fileReader, err := tempFile.Open()
+
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusBadRequest, fmt.Errorf("failed to open file").Error())
+		return
+	}
+
+	defer fileReader.Close()
+
+	fileData, err := ioutil.ReadAll(fileReader)
+
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	reader := bytes.NewReader(fileData)
+
+	url, err := h.service.UserService.UploadUserBanner(c.Request.Context(), userID, reader, filepath.Ext(tempFile.Filename), fileName, len(fileData))
+	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidFileType) {
+			newResponse(c, http.StatusBadRequest, apperrors.ErrInvalidFileType.Error())
+			return
+		}
+		logger.Errorf("failed to upload file. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, fmt.Errorf("failed to upload file").Error())
+		return
+	}
+
+	c.JSON(http.StatusCreated, url)
 }

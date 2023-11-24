@@ -16,4 +16,8 @@ var (
 	ErrIncorrectPasswordFormat   = errors.New("password must be at least 8 characters long and contain at least one uppercase letter and one digit")
 	ErrUserBlocked               = errors.New("user is blocked")
 	ErrDocumentNotFound          = errors.New("document doesn't exists")
+	ErrFileNameIsEmpty           = errors.New("file name can't be empty")
+	ErrTeamNotFound              = errors.New("team dosn't exists")
+	ErrRoleIsNotAvailable        = errors.New("not available role")
+	ErrInvalidFileType           = errors.New("invalid file type")
 )

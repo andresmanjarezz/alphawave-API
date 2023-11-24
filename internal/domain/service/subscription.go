@@ -12,16 +12,16 @@ import (
 
 type SubscriptionService struct {
 	UserService     UserServiceI
-	TeamsService    TeamsServiceI
+	teamsRepository repository.TeamsRepository
 	packagesService PackagesServiceI
 	paymentProvider PaymentProvider
 	repository      repository.SubscriptionRepository
 }
 
-func NewSubscriptionService(userService UserServiceI, teamsService TeamsServiceI, packagesService PackagesServiceI, repository repository.SubscriptionRepository, paymantProvider PaymentProvider) *SubscriptionService {
+func NewSubscriptionService(userService UserServiceI, teamsRepository repository.TeamsRepository, packagesService PackagesServiceI, repository repository.SubscriptionRepository, paymantProvider PaymentProvider) *SubscriptionService {
 	return &SubscriptionService{
 		UserService:     userService,
-		TeamsService:    teamsService,
+		teamsRepository: teamsRepository,
 		repository:      repository,
 		paymentProvider: paymantProvider,
 		packagesService: packagesService,
@@ -37,7 +37,7 @@ func (s *SubscriptionService) Create(ctx context.Context, userID string, package
 		return err
 	}
 
-	team, err := s.TeamsService.GetTeamByID(ctx, teamID)
+	team, err := s.teamsRepository.GetTeamByID(ctx, teamID)
 	if err != nil {
 		return err
 	}

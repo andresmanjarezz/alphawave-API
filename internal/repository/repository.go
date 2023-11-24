@@ -15,6 +15,7 @@ type Repository struct {
 	Members      repository.MemberRepository
 	Packages     repository.PackagesRepository
 	Files        repository.FilesRepository
+	Folder       repository.FolderRepository
 	Subscription repository.SubscriptionRepository
 }
 
@@ -28,6 +29,7 @@ func NewRepository(db *mongo.Database) *Repository {
 		Members:      mongodb.NewMemberRepository(db),
 		Packages:     mongodb.NewPackagesRepository(db),
 		Files:        mongodb.NewFilesRepository(db),
+		Folder:       mongodb.NewFolderRepository(db),
 		Subscription: mongodb.NewSubscriptionRepository(db),
 	}
 }

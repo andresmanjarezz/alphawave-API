@@ -34,6 +34,8 @@ type UserServiceI interface {
 	ChangePassword(ctx context.Context, userID, newPassword, oldPassword string) error
 	UpdateUserInfo(ctx context.Context, userID string, input types.UpdateUserInfoDTO) error
 	UpdateUserSettings(ctx context.Context, userID string, input types.UpdateUserSettingsDTO) error
+	UploadUserAvatar(ctx context.Context, userID string, reader io.Reader, extension string, fileName string, size int) (string, error)
+	UploadUserBanner(ctx context.Context, userID string, reader io.Reader, extension string, fileName string, size int) (string, error)
 	ResetPassword(ctx context.Context, email, token, tokenResult, password string) error
 	VerifyForgotPasswordToken(ctx context.Context, email, token, tokenResult string) (types.ForgotPasswordPayloadDTO, error)
 	ForgotPassword(ctx context.Context, email string) error
@@ -48,12 +50,13 @@ type MemberServiceI interface {
 	GetMembersByQuery(ctx context.Context, teamID string, query types.GetMembersByQuery) ([]types.MemberDTO, error)
 	GetMemberByTeamIdAndUserId(ctx context.Context, teamID string, userID string) (model.Member, error)
 	UserInvite(ctx context.Context, teamID string, email string, role string) error
+	UpdateRoles(ctx context.Context, memberId, teamId string, roles []string) error
 	AcceptInvite(ctx context.Context, token string) (string, error)
 }
 
 type TeamsServiceI interface {
 	Create(ctx context.Context, userID string, input types.CreateTeamsDTO) (string, error)
-	GetTeamByID(ctx context.Context, teamID string) (model.Team, error)
+	GetTeamByID(ctx context.Context, userID, teamID string) (model.Team, error)
 	GetTeamByOwnerId(ctx context.Context, ownerId string) (types.TeamsDTO, error)
 	GetTeamsByUser(ctx context.Context, userID string) ([]model.Team, error)
 	UpdateTeamSettings(ctx context.Context, teamID string, input types.UpdateTeamSettingsDTO) error
@@ -89,11 +92,15 @@ type PackagesServiceI interface {
 }
 
 type FilesServiceI interface {
-	Create(ctx context.Context, reader io.Reader, input types.CreateFileDTO) error
-	CreateFolder(ctx context.Context, input types.CreateFolderDTO) error
+	Create(ctx context.Context, reader io.Reader, input types.CreateFileDTO) (types.FileDTO, error)
+	CreateFolder(ctx context.Context, input types.CreateFolderDTO) (types.FolderDTO, error)
 	GetFilePresignedURL(ctx context.Context, teamID, fileID string) (string, error)
-	GetFile(ctx context.Context, teamID, fileID string) (*types.GetFileDTO, error)
+	GetFolderContent(ctx context.Context, teamId, folderID string) (types.FolderContentDTO, error)
+	GetFolderRoot(ctx context.Context, teamId string) (types.RootFolderDTO, error)
+	CreateRootFolder(ctx context.Context, teamId string) error
 	Delete(ctx context.Context, teamId, fileId string) error
+	UploadImage(ctx context.Context, reader io.Reader, input types.UploadImageDTO) (types.ImageOutputDTO, error)
+	DeleteImage(ctx context.Context, filePath string) error
 }
 
 type PaymentServiceI interface {
@@ -132,8 +139,10 @@ type Deps struct {
 	RolesRepository        repository.RolesRepository
 	PackagesRepository     repository.PackagesRepository
 	FilesRepository        repository.FilesRepository
+	FolderRepository       repository.FolderRepository
 	SubscriptionRepository repository.SubscriptionRepository
 	StorageProvider        storageProvider
+	StorageEndpointURL     string
 	JWTManager             *manager.JWTManager
 	AccessTokenTTL         time.Duration
 	RefreshTokenTTL        time.Duration
@@ -152,16 +161,16 @@ type Deps struct {
 func NewService(deps *Deps) *Service {
 	packagesService := NewPackagesService(deps.PackagesRepository)
 	paymentService := NewPaymentService(deps.PaymentProvider, deps.TeamsRepository)
-	filesService := NewFilesService(deps.StorageProvider, deps.FilesRepository, deps.CodeGenerator)
+	filesService := NewFilesService(deps.StorageProvider, deps.FilesRepository, deps.CodeGenerator, deps.FolderRepository, deps.StorageEndpointURL, deps.UserRepository)
 	emailService := NewEmailService(deps.Sender, deps.EmailConfig)
 	rolesService := NewRolesService(deps.RolesRepository)
-	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, paymentService, *rolesService)
-	userService := NewUserService(deps.Hasher, deps.UserRepository, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.MattermostAdapter, deps.VerificationCodeLength, deps.ApiUrl)
-	subscriptionService := NewSubscriptionService(userService, teamsService, packagesService, deps.SubscriptionRepository, deps.PaymentProvider)
+	teamsService := NewTeamsService(deps.TeamsRepository, deps.UserRepository, deps.MemberRepository, paymentService, *rolesService, filesService)
+	userService := NewUserService(deps.Hasher, deps.UserRepository, filesService, deps.JWTManager, deps.AccessTokenTTL, deps.RefreshTokenTTL, deps.VerificationCodeTTL, deps.CodeGenerator, emailService, deps.MattermostAdapter, deps.VerificationCodeLength, deps.ApiUrl)
+	subscriptionService := NewSubscriptionService(userService, deps.TeamsRepository, packagesService, deps.SubscriptionRepository, deps.PaymentProvider)
 	return &Service{
 		AiChatService:       NewAiChatService(deps.OpenAI),
 		UserService:         userService,
-		MemberService:       NewMemberService(deps.MemberRepository, deps.UserRepository, deps.CodeGenerator, deps.TokenGenerator, teamsService, emailService, userService, deps.ApiUrl),
+		MemberService:       NewMemberService(deps.MemberRepository, deps.UserRepository, deps.TeamsRepository, deps.CodeGenerator, deps.TokenGenerator, teamsService, emailService, userService, deps.ApiUrl),
 		TeamsService:        teamsService,
 		RolesService:        rolesService,
 		TasksService:        NewTasksService(deps.TasksRepository),

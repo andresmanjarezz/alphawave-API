@@ -20,9 +20,10 @@ func (h *HandlerV1) initMembersRoutes(api *gin.RouterGroup) {
 		authenticated := members.Group("/", h.userIdentity, h.setTeamSessionFromCookie)
 		{
 			authenticated.GET("/", h.getMembers)
+			authenticated.GET("/team/:id/members", h.getMembersByTeamId)
 			authenticated.POST("/invite", h.userInvite)
+			authenticated.PUT("/:id/roldes", h.updateRoles)
 		}
-
 	}
 }
 
@@ -94,6 +95,55 @@ func (h *HandlerV1) getMembers(c *gin.Context) {
 	}
 
 	members, err := h.service.MemberService.GetMembersByQuery(c.Request.Context(), id, types.GetMembersByQuery{
+		PaginationQuery: types.PaginationQuery{
+			Skip:  int64(skip),
+			Limit: int64(limit),
+		},
+	})
+
+	if err != nil {
+		if errors.Is(err, apperrors.ErrDocumentNotFound) {
+			logger.Errorf("failed to get members. err: %v", err)
+			newResponse(c, http.StatusNotFound, apperrors.ErrDocumentNotFound.Error())
+			return
+		}
+		logger.Errorf("failed to get members. err: %v", err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	c.JSON(http.StatusOK, members)
+}
+
+func (h *HandlerV1) updateRoles(c *gin.Context) {
+	teamId := c.Param("id")
+	if teamId == "" {
+		newResponse(c, http.StatusBadRequest, "id is empty")
+		return
+	}
+
+}
+
+func (h *HandlerV1) getMembersByTeamId(c *gin.Context) {
+	teamId := c.Param("id")
+	if teamId == "" {
+		newResponse(c, http.StatusBadRequest, "id is empty")
+		return
+	}
+
+	skip, err := strconv.Atoi(c.Query("skip"))
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil {
+		logger.Error(err)
+		newResponse(c, http.StatusInternalServerError, apperrors.ErrInternalServerError.Error())
+		return
+	}
+
+	members, err := h.service.MemberService.GetMembersByQuery(c.Request.Context(), teamId, types.GetMembersByQuery{
 		PaginationQuery: types.PaginationQuery{
 			Skip:  int64(skip),
 			Limit: int64(limit),

@@ -10,4 +10,5 @@ const (
 	packagesCollection     = "packages"
 	subscriptionCollection = "subscription"
 	filesCollection        = "files"
+	folderCollection       = "folders"
 )

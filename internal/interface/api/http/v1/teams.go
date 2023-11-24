@@ -21,14 +21,15 @@ func (h *HandlerV1) initTeamsRoutes(api *gin.RouterGroup) {
 			authenticated.POST("/create", h.createTeam)
 			authenticated.GET("/my-own", h.getTeamByOwnerId)
 			authenticated.GET("/set-session/:id", h.setSession)
-			authenticated.GET("/", h.getTeams)
+			authenticated.GET("", h.getTeams)
+			authenticated.GET("/:id")
 			teamSession := authenticated.Group("/", h.setTeamSessionFromCookie)
 			{
 				teamSession.PUT("/settings", h.updateSettings)
 				roles := teamSession.Group("/roles")
 				{
-					roles.GET("/", h.getRoles)
-					roles.PUT("/", h.UpdatePermissions)
+					roles.GET("", h.getRoles)
+					roles.PUT("", h.UpdatePermissions)
 				}
 			}
 		}
@@ -143,7 +144,7 @@ func (h *HandlerV1) setSession(c *gin.Context) {
 		return
 	}
 
-	team, err := h.service.TeamsService.GetTeamByID(c.Request.Context(), id)
+	team, err := h.service.TeamsService.GetTeamByID(c.Request.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrDocumentNotFound) {
 			newResponse(c, http.StatusNotFound, "team not foud")
@@ -193,6 +194,10 @@ func (h *HandlerV1) getTeams(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, teams)
+}
+
+func (h *HandlerV1) getTeamById(c *gin.Context) {
+
 }
 
 func (h *HandlerV1) updateSettings(c *gin.Context) {

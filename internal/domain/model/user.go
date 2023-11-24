@@ -41,12 +41,19 @@ type ForgotPasswordPayload struct {
 	TokenExpiresTime time.Time `json:"tokenExpiresTime" bson:"tokenExpiresTime"`
 }
 
+type UserImage struct {
+	Url              string    `json:"url" bson:"url"`
+	Path             string    `json:"path" bson:"path"`
+	LastModifiedTime time.Time `json:"lastModifiedTime" bson:"lastModifiedTime"`
+	SetUp            bool      `json:"setUp" bson:"setUp"`
+}
+
 type UserSettings struct {
-	UserIconURL    string `json:"userIconUrl" bson:"userIconUrl"`
-	BannerImageURL string `json:"bannerImageUrl" bson:"bannerImageUrl"`
-	TimeZone       string `json:"timeZone" bson:"timeZone"`
-	DateFormat     string `json:"dateFormat" bson:"dateFormat"`
-	TimeFormat     string `json:"timeFormat" bson:"timeFormat"`
+	UserIcon    UserImage `json:"userIcon" bson:"userIcon"`
+	BannerImage UserImage `json:"bannerImage" bson:"bannerImage"`
+	TimeZone    string    `json:"timeZone" bson:"timeZone"`
+	DateFormat  string    `json:"dateFormat" bson:"dateFormat"`
+	TimeFormat  string    `json:"timeFormat" bson:"timeFormat"`
 }
 type UpdateUserInfoInput struct {
 	FirstName *string
@@ -56,9 +63,9 @@ type UpdateUserInfoInput struct {
 }
 
 type UpdateUserSettingsInput struct {
-	UserIconURL    *string
-	BannerImageURL *string
-	TimeZone       *string
-	DateFormat     *string
-	TimeFormat     *string
+	UserIcon    *UserImage
+	BannerImage *UserImage
+	TimeZone    *string
+	DateFormat  *string
+	TimeFormat  *string
 }

@@ -243,3 +243,20 @@ func (r *MemberRepository) DeleteToken(ctx context.Context, memberID string) err
 
 	return nil
 }
+
+func (r *MemberRepository) UpdateRoles(ctx context.Context, memberId, teamId string, roles []string) error {
+	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	ObjectID, err := primitive.ObjectIDFromHex(memberId)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.UpdateOne(nCtx, bson.M{"_id": ObjectID, "teamId": teamId}, bson.M{"$set": bson.M{"roles": roles}})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return apperrors.ErrMemberNotFound
+		}
+		return err
+	}
+	return nil
+}

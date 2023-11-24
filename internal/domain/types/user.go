@@ -14,12 +14,17 @@ type UserDTO struct {
 	Settings       UserSettings `json:"settings"`
 }
 
+type UserImageDTO struct {
+	Url              string    `json:"url"`
+	LastModifiedTime time.Time `json:"lastModifiedTime"`
+}
+
 type UserSettings struct {
-	UserIconURL    string `json:"userIconUrl"`
-	BannerImageURL string `json:"bannerImageUrl"`
-	TimeZone       string `json:"timeZone"`
-	DateFormat     string `json:"dateFormat"`
-	TimeFormat     string `json:"timeFormat"`
+	UserIcon    UserImageDTO `json:"userIcon"`
+	BannerImage UserImageDTO `json:"bannerImage"`
+	TimeZone    string       `json:"timeZone"`
+	DateFormat  string       `json:"dateFormat"`
+	TimeFormat  string       `json:"timeFormat"`
 }
 
 type UserSignUpDTO struct {
@@ -53,12 +58,18 @@ type UpdateUserInfoDTO struct {
 	Email     *string
 }
 
+type UpdateUserImageDTO struct {
+	Url              string    `json:"url"`
+	Path             string    `json:"path"`
+	LastModifiedTime time.Time `json:"lastModifiedTime"`
+}
+
 type UpdateUserSettingsDTO struct {
-	UserIconURL    *string
-	BannerImageURL *string
-	TimeZone       *string
-	DateFormat     *string
-	TimeFormat     *string
+	UserIcon    *UpdateUserImageDTO
+	BannerImage *UpdateUserImageDTO
+	TimeZone    *string
+	DateFormat  *string
+	TimeFormat  *string
 }
 
 type CreateUserMattermostPayloadDTO struct {

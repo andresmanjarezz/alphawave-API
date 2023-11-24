@@ -20,26 +20,28 @@ const (
 )
 
 type MemberService struct {
-	repository     repository.MemberRepository
-	userRepository repository.UserRepository
-	userService    UserServiceI
-	teamsService   TeamsServiceI
-	emailService   *EmailService
-	codeGenerator  *codegenerator.CodeGenerator
-	tokenGenerator *tokengenerator.TokenGenerator
-	apiUrl         string
+	repository      repository.MemberRepository
+	userRepository  repository.UserRepository
+	userService     UserServiceI
+	teamsRepository repository.TeamsRepository
+	teamsService    TeamsServiceI
+	emailService    *EmailService
+	codeGenerator   *codegenerator.CodeGenerator
+	tokenGenerator  *tokengenerator.TokenGenerator
+	apiUrl          string
 }
 
-func NewMemberService(repository repository.MemberRepository, userRepository repository.UserRepository, codeGenerator *codegenerator.CodeGenerator, tokenGenerator *tokengenerator.TokenGenerator, teamsService TeamsServiceI, emailService *EmailService, userService UserServiceI, apiUrl string) *MemberService {
+func NewMemberService(repository repository.MemberRepository, userRepository repository.UserRepository, teamsRepository repository.TeamsRepository, codeGenerator *codegenerator.CodeGenerator, tokenGenerator *tokengenerator.TokenGenerator, teamsService TeamsServiceI, emailService *EmailService, userService UserServiceI, apiUrl string) *MemberService {
 	return &MemberService{
-		repository:     repository,
-		userRepository: userRepository,
-		userService:    userService,
-		codeGenerator:  codeGenerator,
-		tokenGenerator: tokenGenerator,
-		teamsService:   teamsService,
-		emailService:   emailService,
-		apiUrl:         apiUrl,
+		repository:      repository,
+		userRepository:  userRepository,
+		userService:     userService,
+		codeGenerator:   codeGenerator,
+		tokenGenerator:  tokenGenerator,
+		teamsRepository: teamsRepository,
+		teamsService:    teamsService,
+		emailService:    emailService,
+		apiUrl:          apiUrl,
 	}
 }
 
@@ -178,7 +180,7 @@ func (s *MemberService) UserInvite(ctx context.Context, teamID string, email str
 		return errors.New("this role not available")
 	}
 
-	team, err := s.teamsService.GetTeamByID(ctx, teamID)
+	team, err := s.teamsRepository.GetTeamByID(ctx, teamID)
 
 	if err != nil {
 		return err
@@ -262,6 +264,19 @@ func (s *MemberService) SetUserID(ctx context.Context, memberID string, userID s
 		if errors.Is(err, apperrors.ErrMemberNotFound) {
 			return apperrors.ErrMemberNotFound
 		}
+		return err
+	}
+	return nil
+}
+func (s *MemberService) UpdateRoles(ctx context.Context, memberId, teamId string, roles []string) error {
+	for _, role := range roles {
+		res := model.IsAvailableRole(role)
+		if res == false {
+			return apperrors.ErrRoleIsNotAvailable
+		}
+	}
+	err := s.repository.UpdateRoles(ctx, memberId, teamId, roles)
+	if err != nil {
 		return err
 	}
 	return nil
