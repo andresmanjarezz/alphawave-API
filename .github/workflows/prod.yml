@@ -79,11 +79,11 @@ jobs:
             export PASSWORD_SALT=${{ secrets.PASSWORD_SALT }}
             export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             export JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}
-            OPEN_AI_API_URL=${{ OPEN_AI_API_URL }}
-            OPEN_AI_TOKEN=${{ OPEN_AI_TOKEN }}
-            MINIO_ENDPOINT=${{ MINIO_ENDPOINT }}
-            MINIO_ACCESS_KEY_ID=${{ MINIO_ACCESS_KEY_ID }}
-            MINIO_SECRECT_ACCESS_KEY=${{ MINIO_SECRET_ACCESS_KEY }}
+            export OPEN_AI_API_URL=${{ OPEN_AI_API_URL }}
+            export OPEN_AI_TOKEN=${{ OPEN_AI_TOKEN }}
+            export MINIO_ENDPOINT=${{ MINIO_ENDPOINT }}
+            export MINIO_ACCESS_KEY_ID=${{ MINIO_ACCESS_KEY_ID }}
+            export MINIO_SECRECT_ACCESS_KEY=${{ MINIO_SECRET_ACCESS_KEY }}
             export REGISTRY=$(echo $REGISTRY)
             export NGINX_IMAGE=$(echo $NGINX_IMAGE)
             export API_IMAGE=$(echo $API_IMAGE)
