@@ -24,6 +24,7 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/paymants"
+	"github.com/Coke15/AlphaWave-BackEnd/pkg/storage"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/tokengenerator"
 )
 
@@ -95,7 +96,7 @@ func Run() {
 		FilesRepository:        repository.Files,
 		FolderRepository:       repository.Folder,
 		SubscriptionRepository: repository.Subscription,
-		// StorageProvider:        storageProvider,
+		StorageProvider:        storageProvider,
 		StorageEndpointURL:     cfg.MinIO.Endpoint,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
