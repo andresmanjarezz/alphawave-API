@@ -62,6 +62,7 @@ jobs:
         uses: appleboy/ssh-action@master  
         env:
           SERVER_NAME: "api.alphawavetechnology.com"
+          HTTP_HOST: "https://api.alphawavetechnology.com"
         with: 
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -74,7 +75,7 @@ jobs:
             export MONGODB_USERNAME=${{ secrets.MONGODB_USERNAME }}
             export MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
             export MONGODB_NAME="${{ secrets.MONGODB_NAME }}"
-            export HTTP_HOST=${{ secrets.HTTP_HOST }}
+            export HTTP_HOST=$(echo $HTTP_HOST)
             export FRONT_END_URL=${{ secrets.FRONT_END_URL }}
             export PASSWORD_SALT=${{ secrets.PASSWORD_SALT }}
             export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
