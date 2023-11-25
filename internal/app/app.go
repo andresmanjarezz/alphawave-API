@@ -24,7 +24,6 @@ import (
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/hash"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/logger"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/paymants"
-	"github.com/Coke15/AlphaWave-BackEnd/pkg/storage"
 	"github.com/Coke15/AlphaWave-BackEnd/pkg/tokengenerator"
 )
 
@@ -61,12 +60,12 @@ func Run() {
 
 	openAI := openai.NewOpenAiAPI(cfg.OpenAI.Token, cfg.OpenAI.Url)
 	fmt.Print(cfg.MinIO.Endpoint)
-	storageProvider, err := storage.NewClient(cfg.MinIO.Endpoint, cfg.MinIO.AccessKeyID, cfg.MinIO.SecretAccessKey)
+	// storageProvider, err := storage.NewClient(cfg.MinIO.Endpoint, cfg.MinIO.AccessKeyID, cfg.MinIO.SecretAccessKey)
 
-	if err != nil {
-		logger.Error(err)
-		return
-	}
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	return
+	// }
 
 	paymentProvider := paymants.NewPaymentProvider("sk_test_51NnlKlH75mUJKHqVvdKp7fZOTPu6QqoXr4Sc5YxXKdbY6H4QY6O9dwwEc9VAMiT3CrcMZoNTPWk2whrArX5Phz4z00k5N8TkN9")
 
