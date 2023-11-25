@@ -21,6 +21,7 @@ func corsMiddleware(c *gin.Context) {
 		"http://localhost:5173",
 		"http://localhost:3001",
 		"https://plankton-app-kpofc.ondigitalocean.app",
+		"plankton-app-kpofc.ondigitalocean.app",
 		"https://alpahwave-client.onrender.com",
 		"https://oyster-app-4mavy.ondigitalocean.app",
 	}
