@@ -36,7 +36,9 @@ func Run() {
 	if err != nil {
 		logger.Errorf("error parse config. err: %v", err)
 	}
-
+	fmt.Printf("minIO token: %s", cfg.MinIO.Endpoint)
+	fmt.Printf("mongoDB username: %s", cfg.MongoDB.Username)
+	fmt.Printf("mongoDB url: %s", cfg.MongoDB.Url)
 	// -----
 	hasher := hash.NewHasher(cfg.Auth.PasswordSalt)
 
@@ -59,7 +61,6 @@ func Run() {
 	codeGenerator := codegenerator.NewCodeGenerator()
 
 	openAI := openai.NewOpenAiAPI(cfg.OpenAI.Token, cfg.OpenAI.Url)
-	fmt.Print(cfg.MinIO.Endpoint)
 	// storageProvider, err := storage.NewClient(cfg.MinIO.Endpoint, cfg.MinIO.AccessKeyID, cfg.MinIO.SecretAccessKey)
 
 	// if err != nil {
