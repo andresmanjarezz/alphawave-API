@@ -96,7 +96,7 @@ func Run() {
 		FilesRepository:        repository.Files,
 		FolderRepository:       repository.Folder,
 		SubscriptionRepository: repository.Subscription,
-		StorageProvider:        storageProvider,
+		// StorageProvider:        storageProvider,
 		StorageEndpointURL:     cfg.MinIO.Endpoint,
 		Hasher:                 hasher,
 		JWTManager:             JWTManager,
