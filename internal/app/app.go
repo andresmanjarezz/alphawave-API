@@ -67,6 +67,7 @@ func Run() {
 		logger.Error(err)
 		return
 	}
+	fmt.Print(cfg.MinIO.Endpoint)
 
 	paymentProvider := paymants.NewPaymentProvider("sk_test_51NnlKlH75mUJKHqVvdKp7fZOTPu6QqoXr4Sc5YxXKdbY6H4QY6O9dwwEc9VAMiT3CrcMZoNTPWk2whrArX5Phz4z00k5N8TkN9")
 
