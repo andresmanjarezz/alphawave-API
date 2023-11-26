@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -76,8 +75,8 @@ func Run() {
 
 	// id, err := paymentProvider.CreateCustomer("Roman", "abramenkoroman22@gmail.com", "New Client")
 	// fmt.Print(*id)
-	secret, err := paymentProvider.NewCard("cus_OkkHewbxDaNh2T")
-	fmt.Print(*secret)
+	// secret, err := paymentProvider.NewCard("cus_OkkHewbxDaNh2T")
+
 	mattermostAdapter := mattermost.NewMattermostAdapter(cfg.Mattermost.ApiUrl)
 
 	tokenGenerator := tokengenerator.NewTokenGenerator()

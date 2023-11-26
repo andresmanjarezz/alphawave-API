@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Coke15/AlphaWave-BackEnd/internal/apperrors"
@@ -171,35 +172,43 @@ func (s *FilesService) GetFolderRoot(ctx context.Context, teamId string) (types.
 		}
 		return types.RootFolderDTO{}, err
 	}
-
+	var wg sync.WaitGroup
 	folders := make([]types.FolderDTO, len(foldersContent))
 	files := make([]types.FileDTO, len(filesContent))
+	wg.Add(2)
 
-	for i, item := range foldersContent {
-		folders[i] = types.FolderDTO{
-			Id:               item.ID,
-			Name:             item.Name,
-			Type:             item.Type,
-			CreatedAt:        item.CreatedAt,
-			LastModifiedTime: item.LastModifiedTime,
-			ParentFolderId:   item.ParentFolder,
+	go func() {
+		defer wg.Done()
+		for i, item := range foldersContent {
+			folders[i] = types.FolderDTO{
+				Id:               item.ID,
+				Name:             item.Name,
+				Type:             item.Type,
+				CreatedAt:        item.CreatedAt,
+				LastModifiedTime: item.LastModifiedTime,
+				ParentFolderId:   item.ParentFolder,
+			}
 		}
-	}
+	}()
 
-	for i, item := range filesContent {
-		files[i] = types.FileDTO{
-			ID:        item.ID,
-			OwnerName: item.OwnerName,
-			Name:      item.Name,
-			FolderId:  item.FolderId,
-			Url:       item.Url,
-			Type:      item.Type,
-			Size:      item.Size,
-			Extension: item.Extension,
-			CreatedAt: item.CreatedAt,
+	go func() {
+		defer wg.Done()
+		for i, item := range filesContent {
+			files[i] = types.FileDTO{
+				ID:        item.ID,
+				OwnerName: item.OwnerName,
+				Name:      item.Name,
+				FolderId:  item.FolderId,
+				Url:       item.Url,
+				Type:      item.Type,
+				Size:      item.Size,
+				Extension: item.Extension,
+				CreatedAt: item.CreatedAt,
+			}
 		}
-	}
+	}()
 
+	wg.Wait()
 	return types.RootFolderDTO{
 		ID:               folder.ID,
 		Name:             folder.Name,
