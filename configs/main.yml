@@ -1,5 +1,5 @@
 http:
-  port: 8000
+  port: 7000
   readTimeout: 60s
   writeTimeout: 60s
   maxHeaderBytes: 1
@@ -10,12 +10,10 @@ auth:
   verificationCodeTTL: 1h
   verificationCodeLength: 10
 
-
 limiter:
   rps: 20
   burst: 20
   ttl: 10m
-
 
 smtp:
   host: "smtp.gmail.com"
@@ -34,4 +32,3 @@ email:
     verification: "Thanks, for registration %s!"
     forgotPassword: "Password recovery request"
     userInvite: "You've been invited to join the team %s!"
-
